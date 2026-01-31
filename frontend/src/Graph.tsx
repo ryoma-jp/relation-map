@@ -43,6 +43,22 @@ export default function Graph({ entities, relations, width = 800, height = 600 }
       .append('line')
       .attr('stroke-width', 2);
 
+    // link labels showing relation type
+    const linkLabel = container
+      .append('g')
+      .attr('class', 'link-labels')
+      .selectAll('text')
+      .data(links)
+      .enter()
+      .append('text')
+      .attr('class', 'link-label')
+      .attr('text-anchor', 'middle')
+      .attr('dy', -6)
+      .style('font-family', 'sans-serif')
+      .style('font-size', 11)
+      .style('pointer-events', 'none')
+      .text((d: any) => d.type);
+
     const node = container
       .append('g')
       .selectAll('g')
@@ -83,8 +99,11 @@ export default function Graph({ entities, relations, width = 800, height = 600 }
         .attr('y1', (d: any) => (d.source as any).y)
         .attr('x2', (d: any) => (d.target as any).x)
         .attr('y2', (d: any) => (d.target as any).y);
-
       node.attr('transform', (d: any) => `translate(${d.x},${d.y})`);
+
+      // position link labels at midpoint between source and target
+      linkLabel.attr('x', (d: any) => (((d.source as any).x + (d.target as any).x) / 2))
+        .attr('y', (d: any) => (((d.source as any).y + (d.target as any).y) / 2));
     });
 
     svg.call(
