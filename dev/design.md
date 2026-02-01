@@ -66,8 +66,8 @@ flowchart LR
 - [x] 5.4 サンプルデータからの移行改善（ユーザー追加時に自動的にAPI保存）
 
 ## 6. Docker Compose統合
-- [ ] 6.1 backend, frontend, DBのサービスをdocker-composeで一括起動
-- [ ] 6.2 READMEに起動手順を記載
+- [x] 6.1 backend, frontend, DBのサービスをdocker-composeで一括起動
+- [x] 6.2 READMEに起動手順を記載
 
 ## 7. 追加機能・改善
 - [ ] 7.1 データのエクスポート/インポート（JSON等）

@@ -38,19 +38,72 @@ Typical use cases include:
 
 ## Getting Started
 
+### Prerequisites
+
+- Docker (version 20.10 or later)
+- Docker Compose (version 2.0 or later)
+
+### Quick Start with Docker Compose
 
 You can start the full stack (backend, frontend, and database) using Docker Compose:
 
 ```bash
 git clone https://github.com/yourname/relation-map.git
 cd relation-map
-docker-compose up --build
+docker compose up --build
 ```
 
-The backend (FastAPI) will be available at http://localhost:8000
-The frontend (React) will be available at http://localhost:3000
+The services will be available at:
+- **Backend (FastAPI)**: http://localhost:8000
+- **Frontend (React)**: http://localhost:3000
+- **Database (PostgreSQL)**: localhost:5432
 
-For development without Docker, see each directory's README for details.
+### Docker Compose Commands
+
+**Start services in detached mode:**
+```bash
+docker compose up -d
+```
+
+**Stop services:**
+```bash
+docker compose down
+```
+
+**View logs:**
+```bash
+# All services
+docker compose logs -f
+
+# Specific service
+docker compose logs -f backend
+docker compose logs -f frontend
+```
+
+**Rebuild after code changes:**
+```bash
+docker compose up --build
+```
+
+**Reset database (removes all data):**
+```bash
+docker compose down -v
+docker compose up -d
+```
+
+### Development Without Docker
+
+For local development without Docker, see each directory's README for details:
+- [Backend Setup](backend/README.md)
+- [Frontend Setup](frontend/README.md)
+
+### Troubleshooting
+
+**Port already in use:**
+If ports 3000, 8000, or 5432 are already in use, modify the port mappings in `docker-compose.yml`.
+
+**Container fails to start:**
+Check the logs with `docker compose logs <service-name>` to identify the issue.
 
 ---
 
