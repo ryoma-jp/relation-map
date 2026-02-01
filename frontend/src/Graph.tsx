@@ -1,4 +1,4 @@
-import React, { useEffect, useRef } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import * as d3 from 'd3';
 import { Entity, Relation } from './api';
 
@@ -7,10 +7,25 @@ type Props = {
   relations: Relation[];
   width?: number;
   height?: number;
+  onEditEntity?: (entity: Entity) => void;
+  onDeleteEntity?: (entity: Entity) => void;
+  onEditRelation?: (relation: Relation) => void;
+  onDeleteRelation?: (relation: Relation) => void;
 };
 
-export default function Graph({ entities, relations, width = 800, height = 600 }: Props) {
+export default function Graph({
+  entities,
+  relations,
+  width = 800,
+  height = 600,
+  onEditEntity,
+  onDeleteEntity,
+  onEditRelation,
+  onDeleteRelation,
+}: Props) {
   const ref = useRef<SVGSVGElement | null>(null);
+  const [hoveredNodeId, setHoveredNodeId] = useState<number | null>(null);
+  const [hoveredLinkId, setHoveredLinkId] = useState<number | null>(null);
 
   useEffect(() => {
     if (!ref.current) return;
@@ -23,7 +38,12 @@ export default function Graph({ entities, relations, width = 800, height = 600 }
 
     const nodes = entities.map(e => ({ id: e.id, name: e.name }));
     const links = relations
-      .map(r => ({ source: r.source_id, target: r.target_id, type: r.relation_type }))
+      .map(r => ({
+        id: r.id,
+        source: r.source_id,
+        target: r.target_id,
+        type: r.relation_type,
+      }))
       .filter(l => nodeMap.has(l.source) && nodeMap.has(l.target));
 
     const simulation = d3.forceSimulation(nodes as any)
@@ -33,6 +53,7 @@ export default function Graph({ entities, relations, width = 800, height = 600 }
 
     const container = svg.append('g');
 
+    // Links
     const link = container
       .append('g')
       .attr('stroke', '#999')
@@ -41,9 +62,19 @@ export default function Graph({ entities, relations, width = 800, height = 600 }
       .data(links)
       .enter()
       .append('line')
-      .attr('stroke-width', 2);
+      .attr('stroke-width', 2)
+      .attr('id', (d: any) => `link-${d.id}`)
+      .style('cursor', 'pointer')
+      .on('mouseover', (event: any, d: any) => {
+        setHoveredLinkId(d.id);
+        d3.select(event.target).attr('stroke', '#ff6b6b').attr('stroke-width', 3);
+      })
+      .on('mouseout', (event: any, d: any) => {
+        setHoveredLinkId(null);
+        d3.select(event.target).attr('stroke', '#999').attr('stroke-width', 2);
+      });
 
-    // link labels showing relation type
+    // Link labels
     const linkLabel = container
       .append('g')
       .attr('class', 'link-labels')
@@ -59,30 +90,37 @@ export default function Graph({ entities, relations, width = 800, height = 600 }
       .style('pointer-events', 'none')
       .text((d: any) => d.type);
 
+    // Nodes
     const node = container
       .append('g')
       .selectAll('g')
       .data(nodes)
       .enter()
       .append('g')
+      .on('mouseover', (event: any, d: any) => {
+        setHoveredNodeId(d.id);
+      })
+      .on('mouseout', (event: any, d: any) => {
+        setHoveredNodeId(null);
+      })
       .call(
-          d3
-            .drag()
-            .on('start', (event: any, d: any) => {
-              if (!event.active) simulation.alphaTarget(0.3).restart();
-              d.fx = d.x;
-              d.fy = d.y;
-            })
-            .on('drag', (event: any, d: any) => {
-              d.fx = event.x;
-              d.fy = event.y;
-            })
-            .on('end', (event: any, d: any) => {
-              if (!event.active) simulation.alphaTarget(0);
-              d.fx = null;
-              d.fy = null;
-            })
-        );
+        d3
+          .drag()
+          .on('start', (event: any, d: any) => {
+            if (!event.active) simulation.alphaTarget(0.3).restart();
+            d.fx = d.x;
+            d.fy = d.y;
+          })
+          .on('drag', (event: any, d: any) => {
+            d.fx = event.x;
+            d.fy = event.y;
+          })
+          .on('end', (event: any, d: any) => {
+            if (!event.active) simulation.alphaTarget(0);
+            d.fx = null;
+            d.fy = null;
+          })
+      );
 
     node.append('circle').attr('r', 18).attr('fill', '#4DA1FF');
     node
@@ -91,7 +129,8 @@ export default function Graph({ entities, relations, width = 800, height = 600 }
       .attr('y', 5)
       .text((d: any) => d.name)
       .style('font-family', 'sans-serif')
-      .style('font-size', 12);
+      .style('font-size', 12)
+      .style('pointer-events', 'none');
 
     simulation.on('tick', () => {
       link
@@ -101,8 +140,8 @@ export default function Graph({ entities, relations, width = 800, height = 600 }
         .attr('y2', (d: any) => (d.target as any).y);
       node.attr('transform', (d: any) => `translate(${d.x},${d.y})`);
 
-      // position link labels at midpoint between source and target
-      linkLabel.attr('x', (d: any) => (((d.source as any).x + (d.target as any).x) / 2))
+      linkLabel
+        .attr('x', (d: any) => (((d.source as any).x + (d.target as any).x) / 2))
         .attr('y', (d: any) => (((d.source as any).y + (d.target as any).y) / 2));
     });
 
