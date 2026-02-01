@@ -4,19 +4,26 @@ import { Relation, Entity } from './api';
 type Props = {
   relation?: Relation;
   entities: Entity[];
+  existingTypes: string[];
   onSave: (data: Omit<Relation, 'id'>) => Promise<void>;
   onClose: () => void;
 };
 
-const RELATION_TYPES = ['friend', 'colleague', 'sibling', 'parent', 'mentor', 'member', 'other'];
-
-export default function RelationModal({ relation, entities, onSave, onClose }: Props) {
+export default function RelationModal({ relation, entities, existingTypes, onSave, onClose }: Props) {
   const [sourceId, setSourceId] = useState<number | ''>('');
   const [targetId, setTargetId] = useState<number | ''>('');
-  const [relationType, setRelationType] = useState('friend');
+  const [relationType, setRelationType] = useState('');
   const [description, setDescription] = useState('');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
+
+  useEffect(() => {
+    if (existingTypes.length > 0 && !relationType) {
+      setRelationType(existingTypes[0]);
+    } else if (!relationType) {
+      setRelationType('friend');
+    }
+  }, [existingTypes]);
 
   useEffect(() => {
     if (relation) {
@@ -95,11 +102,22 @@ export default function RelationModal({ relation, entities, onSave, onClose }: P
           <div style={styles.formGroup}>
             <label>関係タイプ</label>
             <select value={relationType} onChange={(e) => setRelationType(e.target.value)} style={styles.input}>
-              {RELATION_TYPES.map((type) => (
-                <option key={type} value={type}>
-                  {type}
-                </option>
-              ))}
+              {existingTypes.length > 0 ? (
+                existingTypes.map((type) => (
+                  <option key={type} value={type}>
+                    {type}
+                  </option>
+                ))
+              ) : (
+                <>
+                  <option value="friend">friend</option>
+                  <option value="colleague">colleague</option>
+                  <option value="sibling">sibling</option>
+                  <option value="parent">parent</option>
+                  <option value="mentor">mentor</option>
+                  <option value="member">member</option>
+                </>
+              )}
             </select>
           </div>
           <div style={styles.formGroup}>

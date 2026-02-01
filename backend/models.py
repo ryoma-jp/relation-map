@@ -23,3 +23,15 @@ class Relation(Base):
 
     source = relationship("Entity", foreign_keys=[source_id], back_populates="outgoing_relations")
     target = relationship("Entity", foreign_keys=[target_id], back_populates="incoming_relations")
+
+
+class EntityType(Base):
+    __tablename__ = "entity_types"
+    id = Column(Integer, primary_key=True, index=True)
+    name = Column(String, unique=True, nullable=False)
+
+
+class RelationType(Base):
+    __tablename__ = "relation_types"
+    id = Column(Integer, primary_key=True, index=True)
+    name = Column(String, unique=True, nullable=False)

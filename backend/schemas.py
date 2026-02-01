@@ -1,5 +1,5 @@
-from pydantic import BaseModel
-from typing import Optional
+from pydantic import BaseModel, ConfigDict
+from typing import Optional, List
 
 class EntityBase(BaseModel):
     name: str
@@ -7,12 +7,14 @@ class EntityBase(BaseModel):
     description: Optional[str] = None
 
 class EntityCreate(EntityBase):
-    pass
+    pass  # For normal CRUD operations, no ID
+
+class EntityImport(EntityBase):
+    id: Optional[int] = None  # For imports only
 
 class Entity(EntityBase):
     id: int
-    class Config:
-        orm_mode = True
+    model_config = ConfigDict(from_attributes=True)
 
 class RelationBase(BaseModel):
     source_id: int
@@ -21,9 +23,21 @@ class RelationBase(BaseModel):
     description: Optional[str] = None
 
 class RelationCreate(RelationBase):
-    pass
+    pass  # For normal CRUD operations, no ID
+
+class RelationImport(RelationBase):
+    id: Optional[int] = None  # For imports only
 
 class Relation(RelationBase):
     id: int
-    class Config:
-        orm_mode = True
+    model_config = ConfigDict(from_attributes=True)
+
+class TypeCreate(BaseModel):
+    name: str
+
+class ImportData(BaseModel):
+    version: str
+    entities: List[EntityImport]
+    relations: List[RelationImport]
+    entity_types: Optional[List[str]] = None
+    relation_types: Optional[List[str]] = None

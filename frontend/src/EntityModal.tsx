@@ -3,16 +3,25 @@ import { Entity } from './api';
 
 type Props = {
   entity?: Entity;
+  existingTypes: string[];
   onSave: (data: Omit<Entity, 'id'>) => Promise<void>;
   onClose: () => void;
 };
 
-export default function EntityModal({ entity, onSave, onClose }: Props) {
+export default function EntityModal({ entity, existingTypes, onSave, onClose }: Props) {
   const [name, setName] = useState('');
-  const [type, setType] = useState('person');
+  const [type, setType] = useState('');
   const [description, setDescription] = useState('');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
+
+  useEffect(() => {
+    if (existingTypes.length > 0 && !type) {
+      setType(existingTypes[0]);
+    } else if (!type) {
+      setType('person');
+    }
+  }, [existingTypes]);
 
   useEffect(() => {
     if (entity) {
@@ -60,9 +69,20 @@ export default function EntityModal({ entity, onSave, onClose }: Props) {
           <div style={styles.formGroup}>
             <label>タイプ</label>
             <select value={type} onChange={(e) => setType(e.target.value)} style={styles.input}>
-              <option value="person">person</option>
-              <option value="organization">organization</option>
-              <option value="other">other</option>
+              {existingTypes.length > 0 ? (
+                existingTypes.map((t) => (
+                  <option key={t} value={t}>
+                    {t}
+                  </option>
+                ))
+              ) : (
+                <>
+                  <option value="person">person</option>
+                  <option value="organization">organization</option>
+                  <option value="place">place</option>
+                  <option value="other">other</option>
+                </>
+              )}
             </select>
           </div>
           <div style={styles.formGroup}>

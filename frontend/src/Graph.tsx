@@ -11,6 +11,7 @@ type Props = {
   onDeleteEntity?: (entity: Entity) => void;
   onEditRelation?: (relation: Relation) => void;
   onDeleteRelation?: (relation: Relation) => void;
+  onViewEntity?: (entity: Entity) => void;
 };
 
 export default function Graph({
@@ -22,6 +23,7 @@ export default function Graph({
   onDeleteEntity,
   onEditRelation,
   onDeleteRelation,
+  onViewEntity,
 }: Props) {
   const ref = useRef<SVGSVGElement | null>(null);
   const [hoveredNodeId, setHoveredNodeId] = useState<number | null>(null);
@@ -97,6 +99,13 @@ export default function Graph({
       .data(nodes)
       .enter()
       .append('g')
+      .style('cursor', 'pointer')
+      .on('click', (event: any, d: any) => {
+        const entity = nodeMap.get(d.id);
+        if (entity && onViewEntity) {
+          onViewEntity(entity);
+        }
+      })
       .on('mouseover', (event: any, d: any) => {
         setHoveredNodeId(d.id);
       })

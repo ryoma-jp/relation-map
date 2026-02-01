@@ -70,12 +70,50 @@ flowchart LR
 - [x] 6.2 READMEに起動手順を記載
 
 ## 7. 追加機能・改善
-- [ ] 7.1 データのエクスポート/インポート（JSON等）
-- [ ] 7.2 UI/UX改善（フィルタ、検索、スタイリングなど）
-- [ ] 7.3 テスト（ユニット・E2E）
-- [ ] 7.4 ドキュメント整備
-- [ ] 7.5 バージョン管理（履歴の保存）
-- [ ] 7.6 複数プロジェクト対応
-- [ ] 7.7 リアルタイム同期（WebSocket）
-- [ ] 7.8 ユーザー認証・認可
+- [x] 7.1 基本機能の完成度向上 ✅ **完全完了**
+	**[詳細設計書](feature7_1_details/feature7_1_design.md) | [実装計画書](feature7_1_details/feature7_1_implementation_plan.md) | [実装サマリー](feature7_1_details/feature7_1_implementation_summary.md) を参照**
+	- [x] Phase 1: データのエクスポート/インポート（JSON等） ✅ 完了
+	- [x] Phase 2: UI/UX改善（フィルタ、検索、詳細表示） ✅ 完了
+	- [x] Phase 2.5: タイプ管理（追加・編集・削除） ✅ 完了
+	- [x] Phase 3: スタイリング改善 ✅ 完了
+	- [x] Phase 4: パフォーマンス最適化 ✅ 完了
+	- [x] Phase 5: ドキュメント整備 ✅ 完了
+		- [x] `README.md` の大幅更新（ユーザーマニュアル化、450+ 行）
+		- [x] `docs/API_REFERENCE.md` 新規作成（開発者向け詳細仕様）
+		- [x] `docs/DEVELOPER_GUIDE.md` 新規作成（開発環境・コード規約）
+		- [x] `CONTRIBUTING.md` 新規作成（コントリビューション ガイド）
+		- [x] `docs/TROUBLESHOOTING.md` 新規作成（トラブルシューティング）
+		- [x] `CHANGELOG.md` 新規作成（リリース履歴）
+	- [x] 0件タイプの永続化・Export/Import対応 ✅ 完了
+- [ ] 7.2 品質・保守性向上
+	- [ ] ユニットテスト（Backend: pytest、Frontend: Jest）
+	- [ ] E2E テスト（Playwright/Cypress）
+	- [ ] CI/CD パイプライン（GitHub Actions）
+- [ ] 7.3 データ管理の高度化
+	- [ ] バージョン管理（履歴の保存）
+	- [ ] ユーザー認証・複数プロジェクト対応
+- [ ] 7.4 アーキテクチャ拡張
+	- [ ] リアルタイム同期（WebSocket）
+	- [ ] ユーザー認証・認可
+	- [ ] 検索インデックス最適化
+- [ ] 7.5 言語拡張
+	- [ ] 日本語モードと英語モードの切り替え
+
+---
+
+## ドキュメント一覧
+
+### ユーザー向けドキュメント
+- **[README.md](../README.md)** - プロジェクト概要、機能説明、使用方法
+- **[docs/API_REFERENCE.md](../docs/API_REFERENCE.md)** - REST API 詳細仕様（開発者向け）
+- **[CHANGELOG.md](../CHANGELOG.md)** - リリース履歴、バージョン情報
+
+### 開発者向けドキュメント
+- **[docs/DEVELOPER_GUIDE.md](../docs/DEVELOPER_GUIDE.md)** - 開発環境セットアップ、コード構成、開発ガイド
+- **[CONTRIBUTING.md](../CONTRIBUTING.md)** - コントリビューション ガイド、PR プロセス、コード規約
+- **[docs/TROUBLESHOOTING.md](../docs/TROUBLESHOOTING.md)** - トラブルシューティング、よくある質問と解決策
+
+### 設計・実装ドキュメント
+- **[feature7_1_details/feature7_1_design.md](feature7_1_details/feature7_1_design.md)** - Feature 7.1 設計書
+- **[feature7_1_details/feature7_1_implementation_summary.md](feature7_1_details/feature7_1_implementation_summary.md)** - Feature 7.1 実装サマリー
 

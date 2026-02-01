@@ -79,6 +79,145 @@ export async function resetAllData(): Promise<{ ok: boolean; message: string }> 
   return res.json();
 }
 
+export async function exportData(): Promise<Blob> {
+  const response = await fetch(`${API_URL}/export`);
+  if (!response.ok) {
+    throw new Error('Export failed');
+  }
+  return response.blob();
+}
+
+export async function importData(
+  data: any,
+  mode: 'merge' | 'replace' = 'merge'
+): Promise<{ ok: boolean; imported_entities: number; imported_relations: number }> {
+  const response = await fetch(`${API_URL}/import?mode=${mode}`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify(data),
+  });
+  
+  if (!response.ok) {
+    const error = await response.json();
+    throw new Error(error.detail || 'Import failed');
+  }
+  
+  return response.json();
+}
+
+// Type management API
+export async function renameEntityType(oldType: string, newType: string): Promise<{ ok: boolean; updated_count: number }> {
+  const response = await fetch(`${API_URL}/entities/types/${encodeURIComponent(oldType)}?new_type=${encodeURIComponent(newType)}`, {
+    method: 'PUT',
+  });
+  if (!response.ok) {
+    const error = await response.json();
+    throw new Error(error.detail || 'Failed to rename entity type');
+  }
+  return response.json();
+}
+
+export async function deleteEntityType(typeName: string): Promise<{ ok: boolean; deleted_entities: number; deleted_relations: number }> {
+  const response = await fetch(`${API_URL}/entities/types/${encodeURIComponent(typeName)}`, {
+    method: 'DELETE',
+  });
+  if (!response.ok) {
+    const error = await response.json();
+    throw new Error(error.detail || 'Failed to delete entity type');
+  }
+  return response.json();
+}
+
+export async function fetchEntityTypes(): Promise<string[]> {
+  const response = await fetch(`${API_URL}/entities/types`);
+  if (!response.ok) {
+    const error = await response.json();
+    throw new Error(error.detail || 'Failed to fetch entity types');
+  }
+  return response.json();
+}
+
+export async function createEntityType(typeName: string): Promise<{ ok: boolean; name: string }> {
+  const response = await fetch(`${API_URL}/entities/types`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ name: typeName }),
+  });
+  if (!response.ok) {
+    const error = await response.json();
+    throw new Error(error.detail || 'Failed to create entity type');
+  }
+  return response.json();
+}
+
+export async function deleteEntityTypeOnly(typeName: string): Promise<{ ok: boolean }> {
+  const response = await fetch(`${API_URL}/entities/types/${encodeURIComponent(typeName)}/only`, {
+    method: 'DELETE',
+  });
+  if (!response.ok) {
+    const error = await response.json();
+    throw new Error(error.detail || 'Failed to delete entity type');
+  }
+  return response.json();
+}
+
+export async function renameRelationType(oldType: string, newType: string): Promise<{ ok: boolean; updated_count: number }> {
+  const response = await fetch(`${API_URL}/relations/types/${encodeURIComponent(oldType)}?new_type=${encodeURIComponent(newType)}`, {
+    method: 'PUT',
+  });
+  if (!response.ok) {
+    const error = await response.json();
+    throw new Error(error.detail || 'Failed to rename relation type');
+  }
+  return response.json();
+}
+
+export async function deleteRelationType(typeName: string): Promise<{ ok: boolean; deleted_count: number }> {
+  const response = await fetch(`${API_URL}/relations/types/${encodeURIComponent(typeName)}`, {
+    method: 'DELETE',
+  });
+  if (!response.ok) {
+    const error = await response.json();
+    throw new Error(error.detail || 'Failed to delete relation type');
+  }
+  return response.json();
+}
+
+export async function fetchRelationTypes(): Promise<string[]> {
+  const response = await fetch(`${API_URL}/relations/types`);
+  if (!response.ok) {
+    const error = await response.json();
+    throw new Error(error.detail || 'Failed to fetch relation types');
+  }
+  return response.json();
+}
+
+export async function createRelationType(typeName: string): Promise<{ ok: boolean; name: string }> {
+  const response = await fetch(`${API_URL}/relations/types`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ name: typeName }),
+  });
+  if (!response.ok) {
+    const error = await response.json();
+    throw new Error(error.detail || 'Failed to create relation type');
+  }
+  return response.json();
+}
+
+export async function deleteRelationTypeOnly(typeName: string): Promise<{ ok: boolean }> {
+  const response = await fetch(`${API_URL}/relations/types/${encodeURIComponent(typeName)}/only`, {
+    method: 'DELETE',
+  });
+  if (!response.ok) {
+    const error = await response.json();
+    throw new Error(error.detail || 'Failed to delete relation type');
+  }
+  return response.json();
+}
+
 // Hooks with refetch capability
 export function useEntities() {
   const [entities, setEntities] = useState<Entity[]>([]);
