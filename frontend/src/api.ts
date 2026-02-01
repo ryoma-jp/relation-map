@@ -69,6 +69,16 @@ export async function deleteRelation(id: number): Promise<void> {
   if (!res.ok) throw new Error(`Failed to delete relation: ${res.statusText}`);
 }
 
+// Data management API
+export async function resetAllData(): Promise<{ ok: boolean; message: string }> {
+  const res = await fetch(`${API_URL}/reset`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+  });
+  if (!res.ok) throw new Error(`Failed to reset data: ${res.statusText}`);
+  return res.json();
+}
+
 // Hooks with refetch capability
 export function useEntities() {
   const [entities, setEntities] = useState<Entity[]>([]);

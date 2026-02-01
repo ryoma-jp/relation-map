@@ -10,14 +10,14 @@ class Entity(Base):
     type = Column(String, nullable=False)  # e.g. 'person', 'organization'
     description = Column(String, nullable=True)
     
-    outgoing_relations = relationship("Relation", back_populates="source", foreign_keys='Relation.source_id')
-    incoming_relations = relationship("Relation", back_populates="target", foreign_keys='Relation.target_id')
+    outgoing_relations = relationship("Relation", back_populates="source", foreign_keys='Relation.source_id', cascade="all, delete-orphan")
+    incoming_relations = relationship("Relation", back_populates="target", foreign_keys='Relation.target_id', cascade="all, delete-orphan")
 
 class Relation(Base):
     __tablename__ = "relations"
     id = Column(Integer, primary_key=True, index=True)
-    source_id = Column(Integer, ForeignKey("entities.id"), nullable=False)
-    target_id = Column(Integer, ForeignKey("entities.id"), nullable=False)
+    source_id = Column(Integer, ForeignKey("entities.id", ondelete="CASCADE"), nullable=False)
+    target_id = Column(Integer, ForeignKey("entities.id", ondelete="CASCADE"), nullable=False)
     relation_type = Column(String, nullable=False)  # e.g. 'friend', 'member', etc.
     description = Column(String, nullable=True)
 

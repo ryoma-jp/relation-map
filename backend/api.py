@@ -94,3 +94,16 @@ def delete_relation(relation_id: int, database: Session = Depends(get_db)):
     database.delete(relation)
     database.commit()
     return {"ok": True}
+
+# Data management
+@router.post("/reset")
+def reset_data(database: Session = Depends(get_db)):
+    """Reset all data: delete all relations and entities"""
+    try:
+        database.query(models.Relation).delete()
+        database.query(models.Entity).delete()
+        database.commit()
+        return {"ok": True, "message": "All data has been reset"}
+    except Exception as e:
+        database.rollback()
+        raise HTTPException(status_code=500, detail=f"Failed to reset data: {str(e)}")
