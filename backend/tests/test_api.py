@@ -460,7 +460,7 @@ class TestTypeManagement:
         """Test deleting entity type cascades to entities."""
         # Create type and entities
         client.post("/entities/types", json={"name": "Temp"})
-        entity1 = client.post("/entities/", json={
+        client.post("/entities/", json={
             "name": "E1", "type": "Temp"
         }).json()
         entity2 = client.post("/entities/", json={
