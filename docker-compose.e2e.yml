@@ -1,0 +1,92 @@
+version: '3.8'
+
+services:
+  # Database for E2E testing
+  db-e2e:
+    image: postgres:15
+    restart: always
+    environment:
+      POSTGRES_USER: test_user
+      POSTGRES_PASSWORD: test_password
+      POSTGRES_DB: relationmap_test
+    ports:
+      - "5434:5432"
+    volumes:
+      - db-e2e-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U test_user -d relationmap_test"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+    networks:
+      - e2e-network
+
+  # Backend for E2E testing
+  backend-e2e:
+    build: ./backend
+    working_dir: /app
+    volumes:
+      - ./backend:/app
+    environment:
+      - TZ=Asia/Tokyo
+      - POSTGRES_USER=test_user
+      - POSTGRES_PASSWORD=test_password
+      - POSTGRES_HOST=db-e2e
+      - POSTGRES_PORT=5432
+      - POSTGRES_DB=relationmap_test
+    depends_on:
+      db-e2e:
+        condition: service_healthy
+    command: uvicorn main:app --host 0.0.0.0 --port 8000 --reload
+    ports:
+      - "8002:8000"
+    networks:
+      - e2e-network
+
+  # Frontend for E2E testing
+  frontend-e2e:
+    build: ./frontend
+    working_dir: /app
+    volumes:
+      - ./frontend:/app
+      - /app/node_modules
+    environment:
+      - TZ=Asia/Tokyo
+      - REACT_APP_API_URL=http://backend-e2e:8000
+      - WDS_SOCKET_PORT=0
+      - TSC_COMPILE_ON_ERROR=true
+      - ESLINT_NO_DEV_ERRORS=true
+    depends_on:
+      - backend-e2e
+    command: sh -c "npm install --silent && SKIP_PREFLIGHT_CHECK=true npm start"
+    ports:
+      - "3001:3000"
+    networks:
+      - e2e-network
+
+  # E2E Test Runner
+  e2e-test:
+    image: mcr.microsoft.com/playwright:v1.40.0-focal
+    working_dir: /app
+    volumes:
+      - .:/app
+      - /app/node_modules
+      - /app/frontend/node_modules
+      - /app/backend/__pycache__
+    environment:
+      - TZ=Asia/Tokyo
+      - BASE_URL=http://frontend-e2e:3000
+      - CI=true
+    depends_on:
+      - frontend-e2e
+      - backend-e2e
+    command: sh -c "npm install --silent && npx playwright install chromium && npx playwright test"
+    networks:
+      - e2e-network
+
+volumes:
+  db-e2e-data:
+
+networks:
+  e2e-network:
+    driver: bridge

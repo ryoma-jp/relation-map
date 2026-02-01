@@ -1,0 +1,52 @@
+version: '3.8'
+
+services:
+  backend-test:
+    build: ./backend
+    working_dir: /app
+    volumes:
+      - ./backend:/app
+    environment:
+      - TZ=Asia/Tokyo
+      - POSTGRES_USER=test_user
+      - POSTGRES_PASSWORD=test_password
+      - POSTGRES_HOST=db-test
+      - POSTGRES_PORT=5432
+      - POSTGRES_DB=relationmap_test
+    depends_on:
+      - db-test
+    command: sh -c "pip install -q pytest pytest-cov pytest-asyncio httpx && pytest tests/ -v --tb=short"
+    ports:
+      - "8001:8000"
+
+  frontend-test:
+    build: ./frontend
+    working_dir: /app
+    volumes:
+      - ./frontend:/app
+      - /app/node_modules
+    environment:
+      - TZ=Asia/Tokyo
+      - CI=true
+    command: sh -c "npm install --silent && npm test -- --watchAll=false --passWithNoTests"
+
+  db-test:
+    image: postgres:15
+    restart: always
+    environment:
+      POSTGRES_USER: test_user
+      POSTGRES_PASSWORD: test_password
+      POSTGRES_DB: relationmap_test
+    ports:
+      - "5433:5432"
+    volumes:
+      - db-test-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U test_user -d relationmap_test"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+volumes:
+  db-test-data:
+

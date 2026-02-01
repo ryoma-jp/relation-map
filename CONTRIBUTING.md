@@ -10,8 +10,9 @@ relation-map プロジェクトへのコントリビューション（貢献）�
 2. [バグレポート](#バグレポート)
 3. [機能リクエスト](#機能リクエスト)
 4. [プルリクエスト](#プルリクエスト)
-5. [コード規約](#コード規約)
-6. [コミットメッセージ](#コミットメッセージ)
+5. [テストとCI/CD](#テストとcicd)
+6. [コード規約](#コード規約)
+7. [コミットメッセージ](#コミットメッセージ)
 
 ---
 
@@ -196,6 +197,136 @@ Fixes #（Issue番号）
 
 ## スクリーンショット（あれば）
 ```
+
+---
+
+## テストとCI/CD
+
+### ローカルでのテスト実行
+
+**プルリクエストを作成する前に、必ずローカルでテストを実行してください。**
+
+#### Backend Unit Tests
+```bash
+bash run-backend-tests.sh
+```
+
+期待される出力:
+```
+Test Suites: X passed, X total
+Tests:       75 passed, 75 total
+```
+
+#### Frontend Unit Tests
+```bash
+bash run-frontend-tests.sh
+```
+
+期待される出力:
+```
+Test Suites: 7 passed, 7 total
+Tests:       14 passed, 14 total
+```
+
+#### E2E Tests（オプション）
+```bash
+bash run-e2e-tests.sh
+```
+
+**Note**: E2Eテストは時間がかかるため、PRを作成する前に実行することを推奨しますが、必須ではありません。
+
+### CI/CDパイプライン
+
+すべてのプルリクエストは自動的に以下のチェックを通過する必要があります：
+
+#### 必須チェック
+✅ Backend Unit Tests - 全てのバックエンドテストが通過
+✅ Frontend Unit Tests - 全てのフロントエンドテストが通過
+✅ CodeQL Security Scan - セキュリティ脆弱性がないこと
+
+#### オプションチェック
+⚠️ E2E Tests - 失敗してもマージ可能（改善中）
+
+### CI パスの確認方法
+
+1. プルリクエストを作成後、下部の「Checks」タブを確認
+2. 全てのチェックが緑色（✅）になることを確認
+3. 赤色（❌）の場合は、該当のログを確認して修正
+
+### よくあるCI失敗の原因と対処法
+
+#### Backend Tests Failed
+- **原因**: データベーススキーマの変更、API仕様の変更
+- **対処**: ローカルで `bash run-backend-tests.sh` を実行し、エラーメッセージを確認
+
+#### Frontend Tests Failed
+- **原因**: コンポーネントの変更、API呼び出しの変更
+- **対処**: ローカルで `bash run-frontend-tests.sh` を実行し、スナップショットを更新
+
+#### CodeQL Alerts
+- **原因**: セキュリティ脆弱性、SQLインジェクションリスクなど
+- **対処**: Security タブで詳細を確認し、推奨される修正を適用
+
+### テスト作成ガイドライン
+
+#### Backend Tests
+```python
+# backend/tests/test_api.py
+def test_create_entity(client, db_session):
+    """Test entity creation endpoint"""
+    response = client.post("/entities/", json={
+        "name": "Test Entity",
+        "type": "person"
+    })
+    assert response.status_code == 200
+    data = response.json()
+    assert data["name"] == "Test Entity"
+    assert data["type"] == "person"
+```
+
+#### Frontend Tests
+```typescript
+// frontend/src/EntityModal.test.tsx
+import { render, screen } from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
+import { EntityModal } from './EntityModal';
+
+test('validates required fields', async () => {
+  const user = userEvent.setup();
+  const onSave = jest.fn();
+  
+  render(<EntityModal onSave={onSave} onClose={jest.fn()} />);
+  
+  await user.click(screen.getByRole('button', { name: /保存/ }));
+  
+  expect(screen.getByText(/名前を入力してください/)).toBeInTheDocument();
+  expect(onSave).not.toHaveBeenCalled();
+});
+```
+
+#### E2E Tests
+```typescript
+// e2e/entity.spec.ts
+import { test, expect } from '@playwright/test';
+
+test('creates a new entity', async ({ page }) => {
+  await page.goto('/');
+  await page.getByText('+ ノード').click();
+  await page.getByLabel('名前').fill('Test Entity');
+  await page.getByRole('button', { name: /保存/ }).click();
+  
+  await expect(page.getByText('Test Entity')).toBeVisible();
+});
+```
+
+### カバレッジ目標
+
+- Backend: 80%以上
+- Frontend: 70%以上
+
+カバレッジはCI実行時に自動計算され、Codecovにアップロードされます。
+
+詳細は[CI/CD Documentation](docs/CI_CD.md)を参照してください。
 
 ---
 

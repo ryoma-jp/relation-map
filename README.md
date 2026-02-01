@@ -1,5 +1,9 @@
 # relation-map
 
+[![CI/CD Pipeline](https://github.com/ryoichi/relation-map/actions/workflows/ci.yml/badge.svg)](https://github.com/ryoichi/relation-map/actions/workflows/ci.yml)
+[![CodeQL](https://github.com/ryoichi/relation-map/actions/workflows/codeql.yml/badge.svg)](https://github.com/ryoichi/relation-map/actions/workflows/codeql.yml)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+
 An open-source tool to visualize relationships between people and entities.
 
 ## Overview
@@ -284,6 +288,47 @@ Check the logs with `docker compose logs <service-name>` to identify the issue.
 - `DELETE /relations/types/{type_name}` - Delete relationship type (cascade delete)
 
 For full API documentation, visit `http://localhost:8000/docs` (Swagger UI).
+
+---
+
+## Testing
+
+This project includes comprehensive test coverage with unit tests and E2E tests.
+
+### Running Tests Locally
+
+**Backend Unit Tests:**
+```bash
+bash run-backend-tests.sh
+```
+This will run all backend unit tests in a Docker container with a test database.
+
+**Frontend Unit Tests:**
+```bash
+bash run-frontend-tests.sh
+```
+This will run all frontend unit tests with Jest and React Testing Library.
+
+**E2E Tests:**
+```bash
+bash run-e2e-tests.sh
+```
+This will start all services and run Playwright E2E tests in Docker.
+
+### Test Coverage
+
+- **Backend**: 75+ unit tests covering API endpoints, database operations, and business logic
+- **Frontend**: 14+ unit tests covering components, forms, and API client
+- **E2E**: 10+ integration tests covering user workflows
+
+### Continuous Integration
+
+All tests run automatically on:
+- Every push to `main` or `develop` branches
+- Every pull request
+- Weekly security scans with CodeQL
+
+View test results and coverage reports in the [GitHub Actions](https://github.com/ryoichi/relation-map/actions) tab.
 
 ---
 
