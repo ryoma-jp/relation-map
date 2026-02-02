@@ -7,10 +7,6 @@ type Props = {
   relations: Relation[];
   width?: number;
   height?: number;
-  onEditEntity?: (entity: Entity) => void;
-  onDeleteEntity?: (entity: Entity) => void;
-  onEditRelation?: (relation: Relation) => void;
-  onDeleteRelation?: (relation: Relation) => void;
   onViewEntity?: (entity: Entity) => void;
 };
 
@@ -19,10 +15,6 @@ export default function Graph({
   relations,
   width = 800,
   height = 600,
-  onEditEntity,
-  onDeleteEntity,
-  onEditRelation,
-  onDeleteRelation,
   onViewEntity,
 }: Props) {
   const ref = useRef<SVGSVGElement | null>(null);

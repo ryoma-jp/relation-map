@@ -38,17 +38,6 @@ test.describe('Relation Map - Import/Export', () => {
   });
 
   test('imports valid data', async ({ page }) => {
-    // Create test data file content
-    const testData = {
-      entities: [
-        { id: 1, name: 'インポートエンティティ1', type: 'Person', x: 100, y: 100 },
-        { id: 2, name: 'インポートエンティティ2', type: 'Person', x: 200, y: 200 }
-      ],
-      relations: [
-        { id: 1, source: 1, target: 2, type: 'knows', label: '知り合い' }
-      ]
-    };
-    
     // Click import button
     await page.getByText('インポート').click();
     

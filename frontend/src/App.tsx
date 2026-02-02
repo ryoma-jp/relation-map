@@ -625,10 +625,6 @@ function App() {
               relations={filteredRelations}
               width={900}
               height={600}
-              onEditEntity={handleEditEntity}
-              onDeleteEntity={handleDeleteEntity}
-              onEditRelation={handleEditRelation}
-              onDeleteRelation={handleDeleteRelation}
               onViewEntity={handleViewEntity}
             />
           </div>
