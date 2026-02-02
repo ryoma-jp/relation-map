@@ -17,7 +17,6 @@ sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 import db
 from models import Base
 import models
-import schemas
 
 # Create a persistent connection for SQLite in-memory database
 from sqlalchemy.pool import StaticPool

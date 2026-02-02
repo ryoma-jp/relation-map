@@ -1,4 +1,3 @@
-import os
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from dotenv import load_dotenv
@@ -29,7 +28,7 @@ def on_startup():
     # wait for the database to be ready (Postgres may still be starting)
     retries = 12
     delay = 1
-    for i in range(retries):
+    for _ in range(retries):
         try:
             with db.engine.connect():
                 break

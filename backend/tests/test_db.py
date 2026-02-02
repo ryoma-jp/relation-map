@@ -4,11 +4,9 @@ Tests database initialization, session management, and connection handling.
 """
 
 import pytest
-from sqlalchemy import create_engine, inspect
+from sqlalchemy import inspect
 from sqlalchemy.orm import sessionmaker
-import db
 import models
-from models import Base
 
 
 class TestDatabaseInitialization:
@@ -234,7 +232,7 @@ class TestConnectionPooling:
         TestingSessionLocal = sessionmaker(bind=db_engine)
         
         # Create and close multiple sessions
-        for i in range(5):
+        for _ in range(5):
             session = TestingSessionLocal()
             session.execute(__import__('sqlalchemy').text("SELECT 1"))
             session.close()

@@ -2,7 +2,6 @@
 Test fixtures and basic setup verification.
 """
 
-import pytest
 
 
 def test_db_session(db_session):

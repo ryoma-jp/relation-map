@@ -6,7 +6,6 @@ Tests data model validation and database operations.
 import pytest
 from sqlalchemy.exc import IntegrityError
 import models
-import db
 
 
 class TestEntityModel:

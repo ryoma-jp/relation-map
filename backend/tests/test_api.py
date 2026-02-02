@@ -3,8 +3,6 @@ API Endpoint Tests for Entity and Relation CRUD operations.
 Tests cover all main API endpoints with positive and negative scenarios.
 """
 
-import pytest
-from fastapi import HTTPException
 
 
 class TestRootEndpoint:
@@ -463,7 +461,7 @@ class TestTypeManagement:
         client.post("/entities/", json={
             "name": "E1", "type": "Temp"
         }).json()
-        entity2 = client.post("/entities/", json={
+        client.post("/entities/", json={
             "name": "E2", "type": "Temp"
         }).json()
         
