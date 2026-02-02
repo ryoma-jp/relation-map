@@ -1,5 +1,4 @@
 import { test, expect } from '@playwright/test';
-import * as path from 'path';
 
 test.describe('Relation Map - Import/Export', () => {
   test.beforeEach(async ({ page }) => {

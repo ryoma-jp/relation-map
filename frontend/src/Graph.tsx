@@ -26,8 +26,6 @@ export default function Graph({
   onViewEntity,
 }: Props) {
   const ref = useRef<SVGSVGElement | null>(null);
-  const [hoveredNodeId, setHoveredNodeId] = useState<number | null>(null);
-  const [hoveredLinkId, setHoveredLinkId] = useState<number | null>(null);
 
   useEffect(() => {
     if (!ref.current) return;
@@ -67,12 +65,10 @@ export default function Graph({
       .attr('stroke-width', 2)
       .attr('id', (d: any) => `link-${d.id}`)
       .style('cursor', 'pointer')
-      .on('mouseover', (event: any, d: any) => {
-        setHoveredLinkId(d.id);
+      .on('mouseover', (event: any) => {
         d3.select(event.target).attr('stroke', '#ff6b6b').attr('stroke-width', 3);
       })
-      .on('mouseout', (event: any, d: any) => {
-        setHoveredLinkId(null);
+      .on('mouseout', (event: any) => {
         d3.select(event.target).attr('stroke', '#999').attr('stroke-width', 2);
       });
 
@@ -105,12 +101,6 @@ export default function Graph({
         if (entity && onViewEntity) {
           onViewEntity(entity);
         }
-      })
-      .on('mouseover', (event: any, d: any) => {
-        setHoveredNodeId(d.id);
-      })
-      .on('mouseout', (event: any, d: any) => {
-        setHoveredNodeId(null);
       })
       .call(
         d3

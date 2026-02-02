@@ -401,7 +401,6 @@ function App() {
   };
 
   const getEntityById = (id: number) => filteredEntities.find(e => e.id === id);
-  const getRelationById = (id: number) => filteredRelations.find(r => r.id === id);
 
   const handleToggleRelationType = (type: string) => {
     setVisibleRelationTypes(prev => {
