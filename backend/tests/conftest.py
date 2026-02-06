@@ -50,6 +50,8 @@ db.SessionLocal = TestingSessionLocal
 # Now import app after database is configured for testing
 from main import app
 import api
+from db import get_db
+from auth import hash_password, create_access_token
 
 
 # ===== Database Fixtures =====
@@ -82,7 +84,7 @@ def client(db_session):
         yield db_session
     
     # Override the get_db dependency
-    app.dependency_overrides[api.get_db] = override_get_db
+    app.dependency_overrides[get_db] = override_get_db
     
     yield TestClient(app)
     
@@ -91,6 +93,59 @@ def client(db_session):
 
 
 # ===== Sample Data Fixtures =====
+
+@pytest.fixture
+def sample_user(db_session):
+    """Create a sample user for testing."""
+    user = models.User(
+        username="testuser",
+        email="test@example.com",
+        password_hash=hash_password("pass123"),
+        is_active=True
+    )
+    db_session.add(user)
+    db_session.commit()
+    db_session.refresh(user)
+    return user
+
+
+@pytest.fixture
+def sample_users(db_session):
+    """Create multiple sample users."""
+    users_data = [
+        {"username": "alice", "email": "alice@example.com", "password_hash": hash_password("pass123")},
+        {"username": "bob", "email": "bob@example.com", "password_hash": hash_password("pass123")},
+    ]
+    users = []
+    for user_data in users_data:
+        user = models.User(**user_data, is_active=True)
+        db_session.add(user)
+        users.append(user)
+    db_session.commit()
+    for u in users:
+        db_session.refresh(u)
+    return users
+
+
+@pytest.fixture
+def auth_token(sample_user):
+    """Generate JWT token for sample user."""
+    token_data = {"sub": str(sample_user.id), "username": sample_user.username}
+    return create_access_token(token_data)
+
+
+@pytest.fixture
+def auth_headers(auth_token):
+    """Generate authentication headers with Bearer token."""
+    return {"Authorization": f"Bearer {auth_token}"}
+
+
+@pytest.fixture
+def authenticated_client(client, auth_headers):
+    """Create authenticated test client with token."""
+    client.headers.update(auth_headers)
+    return client
+
 
 @pytest.fixture
 def sample_entity_type(db_session):
@@ -122,9 +177,9 @@ def sample_entity_types(db_session):
 
 
 @pytest.fixture
-def sample_relation_type(db_session):
+def sample_relation_type(db_session, sample_user):
     """Create a sample relation type."""
-    relation_type = models.RelationType(name="Friend")
+    relation_type = models.RelationType(name="Friend", user_id=sample_user.id)
     db_session.add(relation_type)
     db_session.commit()
     db_session.refresh(relation_type)
@@ -132,7 +187,7 @@ def sample_relation_type(db_session):
 
 
 @pytest.fixture
-def sample_relation_types(db_session):
+def sample_relation_types(db_session, sample_user):
     """Create multiple sample relation types."""
     types_data = [
         {"name": "Friend"},
@@ -141,7 +196,7 @@ def sample_relation_types(db_session):
     ]
     types = []
     for type_data in types_data:
-        relation_type = models.RelationType(**type_data)
+        relation_type = models.RelationType(**type_data, user_id=sample_user.id)
         db_session.add(relation_type)
         types.append(relation_type)
     db_session.commit()
@@ -151,12 +206,13 @@ def sample_relation_types(db_session):
 
 
 @pytest.fixture
-def sample_entity(db_session):
+def sample_entity(db_session, sample_user):
     """Create a sample entity."""
     entity = models.Entity(
         name="John Doe",
         type="person",
-        description="A test person"
+        description="A test person",
+        user_id=sample_user.id
     )
     db_session.add(entity)
     db_session.commit()
@@ -165,7 +221,7 @@ def sample_entity(db_session):
 
 
 @pytest.fixture
-def sample_entities(db_session):
+def sample_entities(db_session, sample_user):
     """Create multiple sample entities."""
     entities_data = [
         {"name": "Alice", "type": "person", "description": "Alice person"},
@@ -174,7 +230,7 @@ def sample_entities(db_session):
     ]
     entities = []
     for entity_data in entities_data:
-        entity = models.Entity(**entity_data)
+        entity = models.Entity(**entity_data, user_id=sample_user.id)
         db_session.add(entity)
         entities.append(entity)
     db_session.commit()
@@ -184,13 +240,14 @@ def sample_entities(db_session):
 
 
 @pytest.fixture
-def sample_relation(db_session, sample_entities):
+def sample_relation(db_session, sample_entities, sample_user):
     """Create a sample relation between two entities."""
     relation = models.Relation(
         source_id=sample_entities[0].id,
         target_id=sample_entities[1].id,
         relation_type="friend",
-        description="They are friends"
+        description="They are friends",
+        user_id=sample_user.id
     )
     db_session.add(relation)
     db_session.commit()
@@ -199,7 +256,7 @@ def sample_relation(db_session, sample_entities):
 
 
 @pytest.fixture
-def sample_relations(db_session, sample_entities):
+def sample_relations(db_session, sample_entities, sample_user):
     """Create multiple sample relations."""
     relations_data = [
         {
@@ -217,7 +274,7 @@ def sample_relations(db_session, sample_entities):
     ]
     relations = []
     for relation_data in relations_data:
-        relation = models.Relation(**relation_data)
+        relation = models.Relation(**relation_data, user_id=sample_user.id)
         db_session.add(relation)
         relations.append(relation)
     db_session.commit()

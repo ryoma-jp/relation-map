@@ -13,7 +13,9 @@ def test_client(client):
     """Verify FastAPI test client is working."""
     response = client.get("/")
     assert response.status_code == 200
-    assert response.json() == {"message": "Relation Map API is running."}
+    data = response.json()
+    assert data["message"] == "Relation Map API is running."
+    assert "version" in data
 
 
 def test_sample_entity_type(sample_entity_type):

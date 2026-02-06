@@ -4,6 +4,14 @@ import App from './App';
 
 jest.mock('./Graph', () => () => <div data-testid="graph">Graph Component</div>);
 
+jest.mock('./AuthContext', () => ({
+  useAuth: () => ({
+    user: { username: 'tester' },
+    loading: false,
+    logout: jest.fn(),
+  }),
+}));
+
 jest.mock('./api', () => ({
   useEntities: () => ({ entities: [], refetch: jest.fn() }),
   useRelations: () => ({ relations: [], refetch: jest.fn() }),
@@ -18,6 +26,7 @@ jest.mock('./api', () => ({
   importData: jest.fn(),
   fetchEntityTypes: jest.fn().mockResolvedValue([]),
   fetchRelationTypes: jest.fn().mockResolvedValue([]),
+  fetchEntitiesList: jest.fn().mockResolvedValue([]),
   createEntityType: jest.fn(),
   createRelationType: jest.fn(),
   deleteEntityTypeOnly: jest.fn(),

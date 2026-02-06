@@ -1,18 +1,22 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { debounce } from 'lodash';
-import { useEntities, useRelations, Entity, Relation, createEntity, updateEntity, deleteEntity, createRelation, updateRelation, deleteRelation, resetAllData, exportData, importData, fetchEntityTypes, fetchRelationTypes, createEntityType, createRelationType, deleteEntityTypeOnly, deleteRelationTypeOnly } from './api';
+import { useEntities, useRelations, Entity, Relation, createEntity, updateEntity, deleteEntity, createRelation, updateRelation, deleteRelation, resetAllData, exportData, importData, fetchEntityTypes, fetchRelationTypes, createEntityType, createRelationType, deleteEntityTypeOnly, deleteRelationTypeOnly, fetchEntitiesList } from './api';
+import { useAuth } from './AuthContext';
+import LoginPage from './LoginPage';
 import Graph from './Graph';
 import EntityModal from './EntityModal';
 import RelationModal from './RelationModal';
 import ConfirmDialog from './ConfirmDialog';
 import { ImportDialog } from './ImportDialog';
 import { TypeManagementDialog } from './TypeManagementDialog';
+import HistoryPanel from './HistoryPanel';
 import { sampleEntities, sampleRelations } from './sampleData';
 
 type ModalState = 'closed' | 'addEntity' | 'editEntity' | 'addRelation' | 'editRelation';
 type ConfirmState = { open: false } | { open: true; type: 'deleteEntity' | 'deleteRelation' | 'resetData'; id?: number };
 
-function App() {
+function AppContent() {
+  const { user, logout } = useAuth();
   const { entities: apiEntities, refetch: refetchEntities } = useEntities();
   const { relations: apiRelations, refetch: refetchRelations } = useRelations();
 
@@ -178,7 +182,7 @@ function App() {
             }
             await refetchEntities();
             await new Promise(resolve => setTimeout(resolve, 100));
-            const newEntities = await fetch(`${process.env.REACT_APP_API_URL || 'http://localhost:8000'}/entities/`).then(r => r.json());
+            const newEntities = await fetchEntitiesList();
             
             const idMap = new Map<number, number>();
             sampleEntities.forEach((sample, index) => {
@@ -273,7 +277,7 @@ function App() {
             }
             await refetchEntities();
             await new Promise(resolve => setTimeout(resolve, 100));
-            const newEntities = await fetch(`${process.env.REACT_APP_API_URL || 'http://localhost:8000'}/entities/`).then(r => r.json());
+            const newEntities = await fetchEntitiesList();
             const idMap = new Map<number, number>();
             sampleEntities.forEach((sample, index) => {
               idMap.set(sample.id, newEntities[index]?.id || sample.id);
@@ -450,6 +454,12 @@ function App() {
           <button onClick={handleResetData} style={styles.warningButton}>
             🔄 リセット
           </button>
+          <div style={styles.userBadge}>
+            <span style={styles.userName}>@{user?.username}</span>
+            <button onClick={logout} style={styles.logoutButton}>
+              ログアウト
+            </button>
+          </div>
         </div>
       </header>
 
@@ -629,6 +639,12 @@ function App() {
             />
           </div>
         </main>
+
+        {/* 履歴パネル */}
+        <HistoryPanel onRefresh={() => {
+          refetchEntities();
+          refetchRelations();
+        }} />
       </div>
 
       {/* Modals */}
@@ -743,6 +759,24 @@ function App() {
   );
 }
 
+function App() {
+  const { user, loading } = useAuth();
+
+  if (loading) {
+    return (
+      <div style={styles.loadingScreen}>
+        <div style={styles.loadingCard}>認証状態を確認中...</div>
+      </div>
+    );
+  }
+
+  if (!user) {
+    return <LoginPage />;
+  }
+
+  return <AppContent />;
+}
+
 const styles = {
   appContainer: {
     display: 'flex',
@@ -780,6 +814,45 @@ const styles = {
     display: 'flex',
     gap: '8px',
     alignItems: 'center',
+  },
+  userBadge: {
+    display: 'flex',
+    alignItems: 'center',
+    gap: '8px',
+    paddingLeft: '12px',
+    borderLeft: '1px solid #e0e0e0',
+  },
+  userName: {
+    fontSize: '13px',
+    fontWeight: '600' as const,
+    color: '#424242',
+  },
+  logoutButton: {
+    padding: '8px 12px',
+    backgroundColor: '#424242',
+    color: 'white',
+    border: 'none',
+    borderRadius: '6px',
+    cursor: 'pointer',
+    fontSize: '12px',
+    fontWeight: '500' as const,
+  },
+  loadingScreen: {
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    height: '100vh',
+    backgroundColor: '#f5f5f5',
+    fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif',
+  },
+  loadingCard: {
+    backgroundColor: '#ffffff',
+    padding: '20px 28px',
+    borderRadius: '8px',
+    border: '1px solid #e0e0e0',
+    boxShadow: '0 4px 12px rgba(0, 0, 0, 0.08)',
+    fontSize: '14px',
+    color: '#424242',
   },
   primaryButton: {
     padding: '10px 16px',

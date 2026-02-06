@@ -1,31 +1,36 @@
-from fastapi import FastAPI
+from fastapi import FastAPI, Depends
 from fastapi.middleware.cors import CORSMiddleware
 from dotenv import load_dotenv
 
 import models
 import db
 import api
+from auth_api import router as auth_router
+from auth import get_current_user
 import time
 from sqlalchemy.exc import OperationalError
 
 load_dotenv()
 
-app = FastAPI()
-app.include_router(api.router)
+app = FastAPI(title="Relation Map API", version="1.2.0")
 
-# CORS設定（全許可、必要に応じて調整）
+# Register routers
+app.include_router(auth_router, prefix="/api")
+app.include_router(api.router, prefix="/api")
+
+# CORS configuration
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
+    allow_origins=["http://localhost:3000", "localhost:3000"],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
 
-# DB初期化
+# Database initialization
 @app.on_event("startup")
 def on_startup():
-    # wait for the database to be ready (Postgres may still be starting)
+    # Wait for database to be ready (Postgres may still be starting)
     retries = 12
     delay = 1
     for _ in range(retries):
@@ -42,4 +47,8 @@ def on_startup():
 
 @app.get("/")
 def read_root():
-    return {"message": "Relation Map API is running."}
+    return {"message": "Relation Map API is running.", "version": "1.2.0"}
+
+@app.get("/health")
+def health():
+    return {"status": "healthy"}

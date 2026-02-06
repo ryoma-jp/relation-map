@@ -86,10 +86,10 @@ class TestSessionManagement:
         assert session is not None
         session.close()
     
-    def test_session_autoflush(self, db_session):
+    def test_session_autoflush(self, db_session, sample_user):
         """Test that autoflush is disabled."""
         # Add an entity but don't commit
-        entity = models.Entity(name="NoFlush", type="person")
+        entity = models.Entity(user_id=sample_user.id, name="NoFlush", type="person")
         db_session.add(entity)
         
         # Since autoflush is False, query before commit should not see it
@@ -100,10 +100,10 @@ class TestSessionManagement:
         result = db_session.query(models.Entity).filter_by(name="NoFlush").first()
         assert result is not None
     
-    def test_session_multiple_adds(self, db_session):
+    def test_session_multiple_adds(self, db_session, sample_user):
         """Test adding multiple objects to session."""
         entities = [
-            models.Entity(name=f"E{i}", type="person")
+            models.Entity(user_id=sample_user.id, name=f"E{i}", type="person")
             for i in range(5)
         ]
         
@@ -118,16 +118,16 @@ class TestSessionManagement:
 class TestDatabaseConstraints:
     """Test database constraints enforcement."""
     
-    def test_not_null_constraint(self, db_session):
+    def test_not_null_constraint(self, db_session, sample_user):
         """Test NOT NULL constraints."""
         # Entity without name should fail
-        entity = models.Entity(type="person")
+        entity = models.Entity(user_id=sample_user.id, type="person")
         db_session.add(entity)
         
         with pytest.raises(Exception):  # IntegrityError or similar
             db_session.commit()
     
-    def test_unique_constraint_entity_type(self, db_session):
+    def test_unique_constraint_entity_type(self, db_session, sample_user):
         """Test unique constraint on entity type names."""
         type1 = models.EntityType(name="UniqueType")
         db_session.add(type1)
@@ -140,14 +140,14 @@ class TestDatabaseConstraints:
         with pytest.raises(Exception):  # IntegrityError
             db_session.commit()
     
-    def test_unique_constraint_relation_type(self, db_session):
+    def test_unique_constraint_relation_type(self, db_session, sample_user):
         """Test unique constraint on relation type names."""
-        type1 = models.RelationType(name="FriendType")
+        type1 = models.RelationType(user_id=sample_user.id, name="FriendType")
         db_session.add(type1)
         db_session.commit()
         
         # Try to add duplicate
-        type2 = models.RelationType(name="FriendType")
+        type2 = models.RelationType(user_id=sample_user.id, name="FriendType")
         db_session.add(type2)
         
         with pytest.raises(Exception):  # IntegrityError
@@ -157,17 +157,17 @@ class TestDatabaseConstraints:
 class TestDataIntegrity:
     """Test data integrity across operations."""
     
-    def test_entity_relation_consistency(self, db_session):
+    def test_entity_relation_consistency(self, db_session, sample_user):
         """Test that relations reference valid entities."""
-        entity1 = models.Entity(name="E1", type="person")
-        entity2 = models.Entity(name="E2", type="person")
+        entity1 = models.Entity(user_id=sample_user.id, name="E1", type="person")
+        entity2 = models.Entity(user_id=sample_user.id, name="E2", type="person")
         
         db_session.add(entity1)
         db_session.add(entity2)
         db_session.flush()
         
         # Create valid relation
-        relation = models.Relation(
+        relation = models.Relation(user_id=sample_user.id, 
             source_id=entity1.id,
             target_id=entity2.id,
             relation_type="friend"
@@ -179,16 +179,16 @@ class TestDataIntegrity:
         assert db_session.query(models.Entity).count() == 2
         assert db_session.query(models.Relation).count() == 1
     
-    def test_cascade_delete_behavior(self, db_session):
+    def test_cascade_delete_behavior(self, db_session, sample_user):
         """Test cascade delete removes dependent relations."""
-        entity1 = models.Entity(name="Delete1", type="person")
-        entity2 = models.Entity(name="Delete2", type="person")
+        entity1 = models.Entity(user_id=sample_user.id, name="Delete1", type="person")
+        entity2 = models.Entity(user_id=sample_user.id, name="Delete2", type="person")
         
         db_session.add(entity1)
         db_session.add(entity2)
         db_session.flush()
         
-        relation = models.Relation(
+        relation = models.Relation(user_id=sample_user.id, 
             source_id=entity1.id,
             target_id=entity2.id,
             relation_type="friend"

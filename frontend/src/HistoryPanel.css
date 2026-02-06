@@ -1,0 +1,194 @@
+.history-panel {
+  border-left: 1px solid #ddd;
+  padding: 15px;
+  width: 280px;
+  background-color: #f9f9f9;
+  max-height: 600px;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+}
+
+.history-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 15px;
+  border-bottom: 1px solid #ddd;
+  padding-bottom: 10px;
+}
+
+.history-header h3 {
+  margin: 0;
+  font-size: 14px;
+  font-weight: bold;
+  color: #333;
+}
+
+.btn-small {
+  padding: 6px 10px;
+  font-size: 12px;
+  border: 1px solid #999;
+  background-color: white;
+  cursor: pointer;
+  border-radius: 3px;
+  transition: background-color 0.2s;
+}
+
+.btn-small:hover:not(:disabled) {
+  background-color: #f0f0f0;
+}
+
+.btn-small:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.checkpoint-input {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-bottom: 10px;
+  padding: 10px;
+  background-color: #fff;
+  border: 1px solid #ddd;
+  border-radius: 3px;
+}
+
+.checkpoint-input input {
+  padding: 6px;
+  border: 1px solid #ccc;
+  border-radius: 3px;
+  font-size: 12px;
+  font-family: inherit;
+}
+
+.checkpoint-input button {
+  padding: 6px;
+  border: 1px solid #ccc;
+  background-color: #f0f0f0;
+  cursor: pointer;
+  border-radius: 3px;
+  font-size: 12px;
+  transition: background-color 0.2s;
+}
+
+.checkpoint-input button:hover:not(:disabled) {
+  background-color: #e0e0e0;
+}
+
+.checkpoint-input button:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.error-message {
+  padding: 8px;
+  background-color: #ffebee;
+  color: #c62828;
+  border: 1px solid #ef5350;
+  border-radius: 3px;
+  font-size: 12px;
+  margin-bottom: 10px;
+  word-break: break-word;
+}
+
+.loading {
+  padding: 20px;
+  text-align: center;
+  color: #666;
+  font-size: 12px;
+}
+
+.empty-state {
+  padding: 20px;
+  text-align: center;
+  color: #999;
+  font-size: 12px;
+}
+
+.history-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  flex: 1;
+  overflow-y: auto;
+}
+
+.history-item {
+  padding: 10px;
+  border: 1px solid #ddd;
+  border-radius: 3px;
+  background-color: white;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.history-item:hover {
+  background-color: #fafafa;
+  border-color: #bbb;
+}
+
+.version-info {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.version-number {
+  font-weight: bold;
+  color: #333;
+  font-size: 12px;
+}
+
+.description {
+  color: #666;
+  word-break: break-word;
+  font-size: 11px;
+}
+
+.timestamp {
+  font-size: 10px;
+  color: #999;
+}
+
+.btn-restore {
+  padding: 6px;
+  border: 1px solid #1976d2;
+  background-color: #e3f2fd;
+  color: #1976d2;
+  cursor: pointer;
+  border-radius: 3px;
+  font-size: 12px;
+  transition: background-color 0.2s, color 0.2s;
+}
+
+.btn-restore:hover:not(:disabled) {
+  background-color: #bbdefb;
+  border-color: #1565c0;
+}
+
+.btn-restore:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+/* Scrollbar styling */
+.history-list::-webkit-scrollbar {
+  width: 6px;
+}
+
+.history-list::-webkit-scrollbar-track {
+  background: #f1f1f1;
+  border-radius: 10px;
+}
+
+.history-list::-webkit-scrollbar-thumb {
+  background: #888;
+  border-radius: 10px;
+}
+
+.history-list::-webkit-scrollbar-thumb:hover {
+  background: #555;
+}
