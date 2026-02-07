@@ -58,6 +58,24 @@ const withAuthHeaders = (options: RequestInit = {}, includeJson: boolean = false
   };
 };
 
+const readErrorMessage = async (res: Response, fallback: string): Promise<string> => {
+  try {
+    const data = await res.json();
+    if (typeof data?.detail === 'string') return data.detail;
+    if (Array.isArray(data?.detail)) {
+      return data.detail
+        .map((item: { loc?: unknown; msg?: string }) => {
+          const loc = Array.isArray(item.loc) ? item.loc[item.loc.length - 1] : null;
+          return loc ? `${String(loc)}: ${item.msg || 'Invalid value'}` : item.msg || 'Invalid value';
+        })
+        .join(', ');
+    }
+  } catch (err) {
+    // Ignore JSON parse errors and fall back to a generic message.
+  }
+  return fallback;
+};
+
 // Auth API
 export async function registerUser(data: { username: string; email: string; password: string }): Promise<AuthToken> {
   const res = await fetch(`${API_URL}/auth/register`, {
@@ -65,7 +83,10 @@ export async function registerUser(data: { username: string; email: string; pass
     headers: buildAuthHeaders(true),
     body: JSON.stringify(data),
   });
-  if (!res.ok) throw new Error(`Failed to register: ${res.statusText}`);
+  if (!res.ok) {
+    const message = await readErrorMessage(res, `Failed to register: ${res.statusText}`);
+    throw new Error(message);
+  }
   return res.json();
 }
 
@@ -75,7 +96,10 @@ export async function loginUser(data: { username: string; password: string }): P
     headers: buildAuthHeaders(true),
     body: JSON.stringify(data),
   });
-  if (!res.ok) throw new Error(`Failed to login: ${res.statusText}`);
+  if (!res.ok) {
+    const message = await readErrorMessage(res, `Failed to login: ${res.statusText}`);
+    throw new Error(message);
+  }
   return res.json();
 }
 

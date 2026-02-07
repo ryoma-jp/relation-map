@@ -26,6 +26,26 @@ const LoginPage: React.FC = () => {
       return;
     }
 
+    if (mode === 'register') {
+      const normalizedUsername = username.trim();
+      if (normalizedUsername.length < 3 || normalizedUsername.length > 50) {
+        setLocalError('ユーザー名は3〜50文字で入力してください。');
+        return;
+      }
+      if (!/^[a-zA-Z0-9_-]+$/.test(normalizedUsername)) {
+        setLocalError('ユーザー名は英数字・ハイフン・アンダースコアのみ使用できます。');
+        return;
+      }
+      if (password.trim().length < 8) {
+        setLocalError('パスワードは8文字以上で入力してください。');
+        return;
+      }
+      if (!email.trim() || !email.includes('@')) {
+        setLocalError('有効なメールアドレスを入力してください。');
+        return;
+      }
+    }
+
     try {
       if (mode === 'login') {
         await login(username.trim(), password);
@@ -131,7 +151,7 @@ const LoginPage: React.FC = () => {
         <div style={styles.helpText}>
           {mode === 'login'
             ? '未登録の方は「新規登録」から作成できます。'
-            : 'ユーザー名は英数字・ハイフン・アンダースコアのみ対応。'}
+            : 'ユーザー名は英数字・ハイフン・アンダースコアのみ対応。パスワードは8文字以上。'}
         </div>
       </div>
     </div>

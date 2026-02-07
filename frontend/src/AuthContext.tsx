@@ -63,7 +63,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       setUser(result.user);
       setError(null);
     } catch (err) {
-      setError('ログインに失敗しました。入力内容を確認してください。');
+      const message = err instanceof Error && err.message ? err.message : 'ログインに失敗しました。入力内容を確認してください。';
+      setError(message);
       setUser(null);
       storeToken(null);
       throw err;
@@ -80,7 +81,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       setUser(result.user);
       setError(null);
     } catch (err) {
-      setError('登録に失敗しました。入力内容を確認してください。');
+      const message = err instanceof Error && err.message ? err.message : '登録に失敗しました。入力内容を確認してください。';
+      setError(message);
       setUser(null);
       storeToken(null);
       throw err;

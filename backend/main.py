@@ -16,6 +16,7 @@ app = FastAPI(title="Relation Map API", version="1.2.0")
 
 # Register routers
 app.include_router(auth_router, prefix="/api")
+app.include_router(auth_router)
 app.include_router(api.router, prefix="/api")
 
 # CORS configuration
