@@ -52,7 +52,7 @@ services:
       - /app/node_modules
     environment:
       - TZ=Asia/Tokyo
-      - REACT_APP_API_URL=http://backend-e2e:8000
+      - REACT_APP_API_URL=http://backend-e2e:8000/api
       - WDS_SOCKET_PORT=0
       - TSC_COMPILE_ON_ERROR=true
       - ESLINT_NO_DEV_ERRORS=true
