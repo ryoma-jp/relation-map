@@ -8,12 +8,29 @@ export type User = {
   email: string;
   created_at: string;
   is_active: boolean;
+  is_admin: boolean;
 };
 
 export type AuthToken = {
   access_token: string;
   token_type: string;
   user: User;
+};
+
+export type AdminUserList = {
+  total: number;
+  items: User[];
+};
+
+export type AuditLogEntry = {
+  id: number;
+  actor_user_id?: number | null;
+  target_user_id?: number | null;
+  actor_username?: string | null;
+  target_username?: string | null;
+  action: string;
+  details?: Record<string, unknown> | null;
+  created_at: string;
 };
 
 export type Entity = {
@@ -118,6 +135,54 @@ export async function logoutUser(): Promise<{ message: string }> {
     : await fetch(`${API_URL}/auth/logout`, { method: 'POST' });
   if (!res.ok) throw new Error(`Failed to logout: ${res.statusText}`);
   return res.json();
+}
+
+// Admin API
+export async function fetchAdminUsers(params: {
+  query?: string;
+  limit?: number;
+  offset?: number;
+}): Promise<AdminUserList> {
+  const searchParams = new URLSearchParams();
+  if (params.query) searchParams.set('q', params.query);
+  if (typeof params.limit === 'number') searchParams.set('limit', String(params.limit));
+  if (typeof params.offset === 'number') searchParams.set('offset', String(params.offset));
+
+  const response = await fetch(`${API_URL}/admin/users?${searchParams.toString()}`, {
+    headers: buildAuthHeaders(false),
+  });
+  if (!response.ok) throw new Error(`Failed to fetch users: ${response.statusText}`);
+  return response.json();
+}
+
+export async function deleteAdminUser(userId: number): Promise<{ ok: boolean }> {
+  const response = await fetch(`${API_URL}/admin/users/${userId}`, withAuthHeaders({ method: 'DELETE' }));
+  if (!response.ok) {
+    const message = await readErrorMessage(response, `Failed to delete user: ${response.statusText}`);
+    throw new Error(message);
+  }
+  return response.json();
+}
+
+export async function fetchAuditLogs(params: {
+  limit?: number;
+  offset?: number;
+  action?: string;
+  actorUserId?: number;
+  targetUserId?: number;
+}): Promise<AuditLogEntry[]> {
+  const searchParams = new URLSearchParams();
+  if (typeof params.limit === 'number') searchParams.set('limit', String(params.limit));
+  if (typeof params.offset === 'number') searchParams.set('offset', String(params.offset));
+  if (params.action) searchParams.set('action', params.action);
+  if (typeof params.actorUserId === 'number') searchParams.set('actor_user_id', String(params.actorUserId));
+  if (typeof params.targetUserId === 'number') searchParams.set('target_user_id', String(params.targetUserId));
+
+  const response = await fetch(`${API_URL}/admin/audit-logs?${searchParams.toString()}`, {
+    headers: buildAuthHeaders(false),
+  });
+  if (!response.ok) throw new Error(`Failed to fetch audit logs: ${response.statusText}`);
+  return response.json();
 }
 
 // Entities API

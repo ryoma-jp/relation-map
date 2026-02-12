@@ -11,6 +11,7 @@ import { ImportDialog } from './ImportDialog';
 import { TypeManagementDialog } from './TypeManagementDialog';
 import HistoryPanel from './HistoryPanel';
 import { sampleEntities, sampleRelations } from './sampleData';
+import AdminPage from './AdminPage';
 
 type ModalState = 'closed' | 'addEntity' | 'editEntity' | 'addRelation' | 'editRelation';
 type ConfirmState = { open: false } | { open: true; type: 'deleteEntity' | 'deleteRelation' | 'resetData'; id?: number };
@@ -30,6 +31,7 @@ function AppContent() {
   const [confirmState, setConfirmState] = useState<ConfirmState>({ open: false });
   const [showImportDialog, setShowImportDialog] = useState(false);
   const [showTypeManagement, setShowTypeManagement] = useState(false);
+  const [activeView, setActiveView] = useState<'main' | 'admin'>('main');
   
   // 検索・フィルタ状態
   const [searchQuery, setSearchQuery] = useState('');
@@ -144,6 +146,10 @@ function AppContent() {
 
   // 使用するデータがサンプルか判定
   const isUsingSampleData = apiEntities.length === 0;
+
+  if (activeView === 'admin' && user) {
+    return <AdminPage currentUser={user} onBack={() => setActiveView('main')} />;
+  }
 
   // Entity handlers
   const handleAddEntity = () => {
@@ -454,6 +460,11 @@ function AppContent() {
           <button onClick={handleResetData} style={styles.warningButton}>
             🔄 リセット
           </button>
+          {user?.is_admin && (
+            <button onClick={() => setActiveView('admin')} style={styles.adminButton}>
+              🛡️ 管理
+            </button>
+          )}
           <div style={styles.userBadge}>
             <span style={styles.userName}>@{user?.username}</span>
             <button onClick={logout} style={styles.logoutButton}>
@@ -885,6 +896,17 @@ const styles = {
     cursor: 'pointer',
     fontSize: '14px',
     fontWeight: '500' as const,
+    transition: 'background-color 0.2s',
+  },
+  adminButton: {
+    padding: '10px 16px',
+    backgroundColor: '#1f2a4d',
+    color: 'white',
+    border: 'none',
+    borderRadius: '6px',
+    cursor: 'pointer',
+    fontSize: '14px',
+    fontWeight: '600' as const,
     transition: 'background-color 0.2s',
   },
   notice: {

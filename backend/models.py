@@ -14,11 +14,14 @@ class User(Base):
     created_at = Column(DateTime, default=datetime.utcnow)
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
     is_active = Column(Boolean, default=True)
+    is_admin = Column(Boolean, default=False)
     
     entities = relationship("Entity", back_populates="owner", cascade="all, delete-orphan")
     relations = relationship("Relation", back_populates="owner", cascade="all, delete-orphan")
     relation_types = relationship("RelationType", back_populates="owner", cascade="all, delete-orphan")
     versions = relationship("Version", back_populates="owner", cascade="all, delete-orphan")
+    audit_logs_as_actor = relationship("AuditLog", foreign_keys="AuditLog.actor_user_id", back_populates="actor")
+    audit_logs_as_target = relationship("AuditLog", foreign_keys="AuditLog.target_user_id", back_populates="target")
 
 class Entity(Base):
     __tablename__ = "entities"
@@ -76,5 +79,18 @@ class Version(Base):
     created_by = Column(String, default="system")
     
     owner = relationship("User", back_populates="versions")
+
+
+class AuditLog(Base):
+    __tablename__ = "audit_logs"
+    id = Column(Integer, primary_key=True, index=True)
+    actor_user_id = Column(Integer, ForeignKey("users.id", ondelete="SET NULL"), nullable=True)
+    target_user_id = Column(Integer, ForeignKey("users.id", ondelete="SET NULL"), nullable=True)
+    action = Column(String, nullable=False)
+    details = Column(JSON, nullable=True)
+    created_at = Column(DateTime, default=datetime.utcnow)
+
+    actor = relationship("User", foreign_keys=[actor_user_id], back_populates="audit_logs_as_actor")
+    target = relationship("User", foreign_keys=[target_user_id], back_populates="audit_logs_as_target")
     
 

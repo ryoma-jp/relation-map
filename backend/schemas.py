@@ -25,6 +25,7 @@ class UserResponse(BaseModel):
     email: str
     created_at: datetime
     is_active: bool
+    is_admin: bool
     
     model_config = ConfigDict(from_attributes=True)
 
@@ -73,6 +74,24 @@ class Relation(RelationBase):
 
 class TypeCreate(BaseModel):
     name: str
+
+
+class AdminUserList(BaseModel):
+    total: int
+    items: List[UserResponse]
+
+
+class AuditLogResponse(BaseModel):
+    id: int
+    actor_user_id: Optional[int] = None
+    target_user_id: Optional[int] = None
+    actor_username: Optional[str] = None
+    target_username: Optional[str] = None
+    action: str
+    details: Optional[Dict[str, Any]] = None
+    created_at: datetime
+
+    model_config = ConfigDict(from_attributes=True)
 
 class ImportData(BaseModel):
     version: str

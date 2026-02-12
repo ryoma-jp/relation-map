@@ -142,8 +142,11 @@ flowchart LR
 			- [x] テスト実装（pytest: auth/auth_api）
 			- [x] フロントエンド認証UI（AuthContext、LoginPage等）
 			- [x] フロントエンドテスト（Jest: 認証UI）
-		- [ ] Phase 2b: プロジェクト管理
-		- [ ] Phase 2c: 共有機能（将来拡張）
+		- [x] Phase 2b: 管理者画面
+			- [x] 登録済みユーザ管理（ユーザ一覧参照、検索、強制削除）
+			- [x] 監査ログ
+		- [ ] Phase 2c: プロジェクト管理
+		- [ ] Phase 2d: 共有機能（将来拡張）
 	- [ ] Phase 3: プロジェクト管理
 - [ ] 7.4 アーキテクチャ拡張
 	- [ ] リアルタイム同期（WebSocket）

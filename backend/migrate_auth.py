@@ -28,12 +28,17 @@ def migrate_to_auth():
         existing_admin = db.query(User).filter(User.username == "admin").first()
         if existing_admin:
             print("⚠️  Default user already exists (admin)")
+            if not existing_admin.is_admin:
+                existing_admin.is_admin = True
+                db.commit()
+                print("✅ Existing admin upgraded with is_admin flag")
         else:
             default_user = User(
                 username="admin",
                 email="admin@localhost",
                 password_hash=hash_password("admin123"),
-                is_active=True
+                is_active=True,
+                is_admin=True,
             )
             db.add(default_user)
             db.commit()

@@ -195,6 +195,24 @@ Check the logs with `docker compose logs <service-name>` to identify the issue.
    - All nodes/relationships using this type are deleted
 5. **Track usage**: See usage count for each type (0件 = unused custom types)
 
+### Admin Console
+
+When you log in as an admin user, an "🛡️ Admin" button appears in the header.
+
+If the database is empty on first startup, a default admin user is created automatically.
+See `backend/main.py` for the default credentials.
+
+You can override the defaults with environment variables:
+- `ADMIN_USERNAME`
+- `ADMIN_EMAIL`
+- `ADMIN_PASSWORD`
+
+What you can do in the admin console:
+- **Registered user management**: view/search the user list and force delete users
+- **Audit logs**: review the history of admin actions
+
+**Note**: Force delete removes data tied to the user. The last admin user cannot be deleted.
+
 ### Exporting Your Data
 
 1. Click **"📥 Export"** button in the toolbar
@@ -286,6 +304,12 @@ Check the logs with `docker compose logs <service-name>` to identify the issue.
 - `DELETE /relations/types/{type_name}/only` - Delete relationship type (0 usage)
 - `PUT /relations/types/{old_type}` - Rename relationship type (bulk update)
 - `DELETE /relations/types/{type_name}` - Delete relationship type (cascade delete)
+
+### Admin
+
+- `GET /admin/users` - List users (admin only, supports `q`, `limit`, `offset`)
+- `DELETE /admin/users/{user_id}` - Force delete user (admin only)
+- `GET /admin/audit-logs` - List audit logs (admin only)
 
 For full API documentation, visit `http://localhost:8000/docs` (Swagger UI).
 

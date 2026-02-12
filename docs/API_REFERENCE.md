@@ -14,7 +14,8 @@ Complete API documentation for relation-map backend.
 2. [Relationships (Edges)](#relationships-edges)
 3. [Data Management](#data-management)
 4. [Type Management](#type-management)
-5. [Error Handling](#error-handling)
+5. [Admin](#admin)
+6. [Error Handling](#error-handling)
 
 ---
 
@@ -605,6 +606,95 @@ Complete API documentation for relation-map backend.
 **Status Codes:**
 - 200 OK
 - 404 Not Found
+
+---
+
+## Admin
+
+**Note:** Admin endpoints require an admin user.
+
+### List Users
+
+**Endpoint** `GET /admin/users`
+
+**Query Parameters:**
+- `q` (optional) - Search by username or email
+- `limit` (optional, default: 50, max: 200) - Maximum number of records
+- `offset` (optional, default: 0) - Pagination offset
+
+**Response:**
+```json
+{
+  "total": 2,
+  "items": [
+    {
+      "id": 1,
+      "username": "admin",
+      "email": "admin@localhost",
+      "created_at": "2026-02-01T12:00:00Z",
+      "is_active": true,
+      "is_admin": true
+    }
+  ]
+}
+```
+
+**Status Code:** 200 OK
+
+---
+
+### Force Delete User
+
+**Endpoint** `DELETE /admin/users/{user_id}`
+
+**Path Parameters:**
+- `user_id` (required) - User ID to delete
+
+**Response:**
+```json
+{
+  "ok": true
+}
+```
+
+**Status Codes:**
+- 200 OK
+- 400 Bad Request (cannot delete yourself)
+- 404 Not Found (user doesn't exist)
+- 409 Conflict (cannot delete the last admin)
+
+---
+
+### List Audit Logs
+
+**Endpoint** `GET /admin/audit-logs`
+
+**Query Parameters:**
+- `limit` (optional, default: 50, max: 200)
+- `offset` (optional, default: 0)
+- `action` (optional) - Exact action filter (e.g. `admin.user_delete`)
+- `actor_user_id` (optional) - Filter by actor
+- `target_user_id` (optional) - Filter by target
+
+**Response:**
+```json
+[
+  {
+    "id": 1,
+    "actor_user_id": 1,
+    "target_user_id": 3,
+    "actor_username": "admin",
+    "target_username": "alice",
+    "action": "admin.user_delete",
+    "details": {
+      "username": "alice"
+    },
+    "created_at": "2026-02-01T12:45:00Z"
+  }
+]
+```
+
+**Status Code:** 200 OK
 
 ---
 
