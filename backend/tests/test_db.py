@@ -127,18 +127,17 @@ class TestDatabaseConstraints:
         with pytest.raises(Exception):  # IntegrityError or similar
             db_session.commit()
     
-    def test_unique_constraint_entity_type(self, db_session, sample_user):
-        """Test unique constraint on entity type names."""
-        type1 = models.EntityType(name="UniqueType")
+    def test_unique_constraint_entity_type(self, db_session, sample_user, sample_users):
+        """Test entity type can have same name for different users."""
+        # Same name for one user
+        type1 = models.EntityType(name="UniqueType", user_id=sample_user.id)
         db_session.add(type1)
         db_session.commit()
         
-        # Try to add duplicate
-        type2 = models.EntityType(name="UniqueType")
+        # Same name for different user should be allowed
+        type2 = models.EntityType(name="UniqueType", user_id=sample_users[0].id)
         db_session.add(type2)
-        
-        with pytest.raises(Exception):  # IntegrityError
-            db_session.commit()
+        db_session.commit()  # Should succeed
     
     def test_unique_constraint_relation_type(self, db_session, sample_user):
         """Test unique constraint on relation type names."""

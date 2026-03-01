@@ -23,7 +23,7 @@ describe('api client', () => {
     const result = await createEntity({ name: 'Alice', type: 'person' });
 
     expect(global.fetch).toHaveBeenCalledWith(
-      'http://localhost:8000/entities/',
+      'http://localhost:8000/api/entities/',
       expect.objectContaining({
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -51,7 +51,7 @@ describe('api client', () => {
 
     const result = await fetchEntityTypes();
 
-    expect(global.fetch).toHaveBeenCalledWith('http://localhost:8000/entities/types');
+    expect(global.fetch).toHaveBeenCalledWith('http://localhost:8000/api/entities/types');
     expect(result).toEqual(mockTypes);
   });
 
@@ -64,7 +64,7 @@ describe('api client', () => {
     await deleteEntityTypeOnly('person');
 
     expect(global.fetch).toHaveBeenCalledWith(
-      'http://localhost:8000/entities/types/person/only',
+      'http://localhost:8000/api/entities/types/person/only',
       { method: 'DELETE' }
     );
   });

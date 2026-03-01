@@ -18,6 +18,7 @@ class User(Base):
     
     entities = relationship("Entity", back_populates="owner", cascade="all, delete-orphan")
     relations = relationship("Relation", back_populates="owner", cascade="all, delete-orphan")
+    entity_types = relationship("EntityType", back_populates="owner", cascade="all, delete-orphan")
     relation_types = relationship("RelationType", back_populates="owner", cascade="all, delete-orphan")
     versions = relationship("Version", back_populates="owner", cascade="all, delete-orphan")
     audit_logs_as_actor = relationship("AuditLog", foreign_keys="AuditLog.actor_user_id", back_populates="actor")
@@ -52,7 +53,13 @@ class Relation(Base):
 class EntityType(Base):
     __tablename__ = "entity_types"
     id = Column(Integer, primary_key=True, index=True)
-    name = Column(String, unique=True, nullable=False)
+    user_id = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False)
+    name = Column(String, nullable=False)
+    
+    # Composite index for efficient lookups
+    __table_args__ = (UniqueConstraint('user_id', 'name', name='uq_entity_type_user_name'),)
+    
+    owner = relationship("User", back_populates="entity_types")
 
 
 class RelationType(Base):

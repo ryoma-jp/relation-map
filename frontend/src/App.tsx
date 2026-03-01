@@ -253,10 +253,40 @@ function AppContent() {
   };
 
   const handleRemoveType = async (category: 'entity' | 'relation', typeName: string) => {
-    if (category === 'entity') {
-      await deleteEntityTypeOnly(typeName);
-    } else {
-      await deleteRelationTypeOnly(typeName);
+    // When using sample data, keep local state in sync so removed types don't reappear.
+    if (isUsingSampleData) {
+      if (category === 'relation') {
+        setLocalRelations(prev => prev.filter(r => r.relation_type !== typeName));
+      } else {
+        const entityIdsToRemove = new Set(
+          localEntities.filter(entity => entity.type === typeName).map(entity => entity.id)
+        );
+        setLocalEntities(prev => prev.filter(entity => entity.type !== typeName));
+        if (entityIdsToRemove.size > 0) {
+          setLocalRelations(prev =>
+            prev.filter(
+              relation =>
+                !entityIdsToRemove.has(relation.source_id) &&
+                !entityIdsToRemove.has(relation.target_id)
+            )
+          );
+        }
+      }
+    }
+
+    try {
+      if (category === 'entity') {
+        await deleteEntityTypeOnly(typeName);
+      } else {
+        await deleteRelationTypeOnly(typeName);
+      }
+    } catch (error) {
+      // サンプルデータの場合、データベースにタイプが存在しないが、
+      // ローカルから削除したいので404エラーは無視する
+      const errorMsg = error instanceof Error ? error.message : '';
+      if (!errorMsg.includes('not found') && !errorMsg.includes('404')) {
+        throw error;
+      }
     }
     await loadTypes();
   };

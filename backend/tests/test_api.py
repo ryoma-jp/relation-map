@@ -488,7 +488,7 @@ class TestTypeManagement:
         # Delete relation type
         response = authenticated_client.delete("/api/relations/types/temp_type")
         assert response.status_code == 200
-        assert response.json()["deleted_count"] == 1
+        assert response.json()["deleted_relations"] == 1
         
         # Verify relations are gone
         relations = authenticated_client.get("/api/relations/").json()

@@ -16,10 +16,13 @@ class VersionService:
         """Get current state of the graph as a snapshot for a specific user."""
         entities = db.query(Entity).filter(Entity.user_id == user_id).all()
         relations = db.query(Relation).filter(Relation.user_id == user_id).all()
+        entity_types_records = db.query(EntityType).filter(EntityType.user_id == user_id).all()
         relation_types = db.query(RelationType).filter(RelationType.user_id == user_id).all()
         
-        # Get entity types from existing entities
-        entity_types = list(set(e.type for e in entities))
+        # Get entity types from records and existing entities
+        entity_types_set = {et.name for et in entity_types_records}
+        entity_types_set.update([e.type for e in entities])
+        entity_types = sorted(entity_types_set)
 
         return VersionSnapshot(
             entities=[
@@ -129,10 +132,16 @@ class VersionService:
         # Delete existing data for this user only
         db.query(Relation).filter(Relation.user_id == user_id).delete()
         db.query(Entity).filter(Entity.user_id == user_id).delete()
+        db.query(EntityType).filter(EntityType.user_id == user_id).delete()
         db.query(RelationType).filter(RelationType.user_id == user_id).delete()
         db.commit()
 
-        # Restore data from snapshot
+        # Restore entity types
+        for entity_type_data in snapshot.get("entity_types", []):
+            entity_type = EntityType(name=entity_type_data["name"], user_id=user_id)
+            db.add(entity_type)
+
+        # Restore relation types
         for relation_type_data in snapshot.get("relation_types", []):
             relation_type = RelationType(name=relation_type_data["name"], user_id=user_id)
             db.add(relation_type)

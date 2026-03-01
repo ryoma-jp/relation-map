@@ -11,12 +11,15 @@ router = APIRouter()
 
 # Helper functions
 
-def ensure_entity_type(database: Session, type_name: str, user_id: int = None):
+def ensure_entity_type(database: Session, type_name: str, user_id: int):
     if not type_name:
         return
-    exists = database.query(models.EntityType).filter(models.EntityType.name == type_name).first()
+    exists = database.query(models.EntityType).filter(
+        models.EntityType.name == type_name,
+        models.EntityType.user_id == user_id
+    ).first()
     if not exists:
-        database.add(models.EntityType(name=type_name))
+        database.add(models.EntityType(name=type_name, user_id=user_id))
 
 def ensure_relation_type(database: Session, type_name: str, user_id: int):
     if not type_name:
@@ -34,13 +37,17 @@ def list_entity_types(
     database: Session = Depends(get_db),
     current_user: models.User = Depends(get_current_user)
 ):
-    types = database.query(models.EntityType).order_by(models.EntityType.name).all()
+    types = database.query(models.EntityType).filter(
+        models.EntityType.user_id == current_user.id
+    ).order_by(models.EntityType.name).all()
     if len(types) == 0:
         derived = {e.type for e in database.query(models.Entity).filter(models.Entity.user_id == current_user.id).all()}
         for type_name in derived:
-            ensure_entity_type(database, type_name)
+            ensure_entity_type(database, type_name, current_user.id)
         database.commit()
-        types = database.query(models.EntityType).order_by(models.EntityType.name).all()
+        types = database.query(models.EntityType).filter(
+            models.EntityType.user_id == current_user.id
+        ).order_by(models.EntityType.name).all()
     return [t.name for t in types]
 
 @router.post("/entities/types")
@@ -52,10 +59,13 @@ def create_entity_type(
     name = payload.name.strip()
     if not name:
         raise HTTPException(status_code=400, detail="Type name is required")
-    exists = database.query(models.EntityType).filter(models.EntityType.name == name).first()
+    exists = database.query(models.EntityType).filter(
+        models.EntityType.name == name,
+        models.EntityType.user_id == current_user.id
+    ).first()
     if exists:
         raise HTTPException(status_code=409, detail="Type already exists")
-    database.add(models.EntityType(name=name))
+    database.add(models.EntityType(name=name, user_id=current_user.id))
     database.commit()
     return {"ok": True, "name": name}
 
@@ -82,13 +92,21 @@ def list_relation_types(
     database: Session = Depends(get_db),
     current_user: models.User = Depends(get_current_user)
 ):
-    types = database.query(models.RelationType).filter(models.RelationType.user_id == current_user.id).order_by(models.RelationType.name).all()
+    # Get all relation types for this user (including orphaned ones that should be visible for cleanup)
+    types = database.query(models.RelationType).filter(
+        models.RelationType.user_id == current_user.id
+    ).order_by(models.RelationType.name).all()
+    
+    # If no explicit types exist, derive from actual relations
     if len(types) == 0:
         derived = {r.relation_type for r in database.query(models.Relation).filter(models.Relation.user_id == current_user.id).all()}
         for type_name in derived:
-            ensure_relation_type(database, type_name)
+            ensure_relation_type(database, type_name, current_user.id)
         database.commit()
-        types = database.query(models.RelationType).filter(models.RelationType.user_id == current_user.id).order_by(models.RelationType.name).all()
+        types = database.query(models.RelationType).filter(
+            models.RelationType.user_id == current_user.id
+        ).order_by(models.RelationType.name).all()
+    
     return [t.name for t in types]
 
 @router.post("/relations/types")
@@ -138,7 +156,7 @@ def create_entity(
     database: Session = Depends(get_db),
     current_user: models.User = Depends(get_current_user)
 ):
-    ensure_entity_type(database, entity.type)
+    ensure_entity_type(database, entity.type, current_user.id)
     db_entity = models.Entity(
         **entity.model_dump(),
         user_id=current_user.id
@@ -184,7 +202,7 @@ def update_entity(
     ).first()
     if db_entity is None:
         raise HTTPException(status_code=404, detail="Entity not found")
-    ensure_entity_type(database, entity.type)
+    ensure_entity_type(database, entity.type, current_user.id)
     for key, value in entity.model_dump().items():
         setattr(db_entity, key, value)
     database.commit()
@@ -295,10 +313,12 @@ def reset_data(
     database: Session = Depends(get_db),
     current_user: models.User = Depends(get_current_user)
 ):
-    """Reset all data for current user: delete all relations and entities"""
+    """Reset all data for current user: delete all relations, entities, and types"""
     try:
         database.query(models.Relation).filter(models.Relation.user_id == current_user.id).delete()
         database.query(models.Entity).filter(models.Entity.user_id == current_user.id).delete()
+        database.query(models.EntityType).filter(models.EntityType.user_id == current_user.id).delete()
+        database.query(models.RelationType).filter(models.RelationType.user_id == current_user.id).delete()
         database.commit()
         # Auto-create version
         VersionService.create_version(database, "Data reset", "system", current_user)
@@ -316,10 +336,12 @@ def export_data(
     try:
         entities = database.query(models.Entity).filter(models.Entity.user_id == current_user.id).all()
         relations = database.query(models.Relation).filter(models.Relation.user_id == current_user.id).all()
+        entity_type_records = database.query(models.EntityType).filter(models.EntityType.user_id == current_user.id).all()
         relation_type_records = database.query(models.RelationType).filter(models.RelationType.user_id == current_user.id).all()
 
-        # Get entity types from existing entities
-        entity_types = sorted(set(e.type for e in entities))
+        # Get entity types from records and existing entities
+        entity_types = {t.name for t in entity_type_records}
+        entity_types.update([e.type for e in entities])
         
         relation_types = {t.name for t in relation_type_records}
         relation_types.update([r.relation_type for r in relations])
@@ -329,7 +351,7 @@ def export_data(
             "exported_at": datetime.utcnow().isoformat() + "Z",
             "entities": [schemas.Entity.model_validate(e).model_dump() for e in entities],
             "relations": [schemas.Relation.model_validate(r).model_dump() for r in relations],
-            "entity_types": entity_types,
+            "entity_types": sorted(entity_types),
             "relation_types": sorted(relation_types)
         }
         
@@ -380,7 +402,18 @@ def import_data(
             new_relation = models.Relation(**relation_dict, user_id=current_user.id)
             database.add(new_relation)
 
-        # Import types
+        # Import entity types
+        entity_types = set(data.entity_types or [])
+        entity_types.update([e.type for e in data.entities])
+        
+        for type_name in entity_types:
+            existing = database.query(models.EntityType).filter(
+                (models.EntityType.name == type_name) & (models.EntityType.user_id == current_user.id)
+            ).first()
+            if not existing:
+                database.add(models.EntityType(name=type_name, user_id=current_user.id))
+
+        # Import relation types
         relation_types = set(data.relation_types or [])
         relation_types.update([r.relation_type for r in data.relations])
 
@@ -404,26 +437,44 @@ def import_data(
         raise HTTPException(status_code=500, detail=f"Import failed: {str(e)}")
 
 @router.put("/entities/types/{old_type}")
-def rename_entity_type(old_type: str, new_type: str = Query(...), database: Session = Depends(get_db)):
+def rename_entity_type(
+    old_type: str,
+    new_type: str = Query(...),
+    database: Session = Depends(get_db),
+    current_user: models.User = Depends(get_current_user)
+):
     """Rename entity type (bulk update all entities with this type)"""
     try:
-        entities = database.query(models.Entity).filter(models.Entity.type == old_type).all()
+        # Filter by user_id
+        entities = database.query(models.Entity).filter(
+            models.Entity.type == old_type,
+            models.Entity.user_id == current_user.id
+        ).all()
         count = len(entities)
         
         if count == 0:
             raise HTTPException(status_code=404, detail=f"No entities found with type '{old_type}'")
 
-        if database.query(models.EntityType).filter(models.EntityType.name == new_type).first():
+        # Check if new_type already exists for this user's entities
+        if database.query(models.Entity).filter(
+            models.Entity.type == new_type,
+            models.Entity.user_id == current_user.id
+        ).first():
             raise HTTPException(status_code=409, detail=f"Type '{new_type}' already exists")
         
+        # Update all entities
         for entity in entities:
             entity.type = new_type
 
-        existing_type = database.query(models.EntityType).filter(models.EntityType.name == old_type).first()
+        # Update or create EntityType record
+        existing_type = database.query(models.EntityType).filter(
+            models.EntityType.name == old_type,
+            models.EntityType.user_id == current_user.id
+        ).first()
         if existing_type:
             existing_type.name = new_type
         else:
-            ensure_entity_type(database, new_type)
+            ensure_entity_type(database, new_type, current_user.id)
         
         database.commit()
         return {"ok": True, "updated_count": count, "old_type": old_type, "new_type": new_type}
@@ -434,28 +485,47 @@ def rename_entity_type(old_type: str, new_type: str = Query(...), database: Sess
         raise HTTPException(status_code=500, detail=f"Failed to rename type: {str(e)}")
 
 @router.delete("/entities/types/{type_name}")
-def delete_entity_type(type_name: str, database: Session = Depends(get_db)):
+def delete_entity_type(
+    type_name: str,
+    database: Session = Depends(get_db),
+    current_user: models.User = Depends(get_current_user)
+):
     """Delete all entities with specified type (and their relations)"""
     try:
-        entities = database.query(models.Entity).filter(models.Entity.type == type_name).all()
+        # Filter entities by type and user
+        entities = database.query(models.Entity).filter(
+            models.Entity.type == type_name,
+            models.Entity.user_id == current_user.id
+        ).all()
         entity_ids = [e.id for e in entities]
         
-        if not entity_ids:
-            raise HTTPException(status_code=404, detail=f"No entities found with type '{type_name}'")
-        
-        # Delete related relations first
-        relations_deleted = database.query(models.Relation).filter(
-            (models.Relation.source_id.in_(entity_ids)) | (models.Relation.target_id.in_(entity_ids))
+        # Delete the EntityType itself (whether or not entities existed)
+        type_count = database.query(models.EntityType).filter(
+            models.EntityType.name == type_name
         ).delete(synchronize_session=False)
         
-        # Delete entities
-        entities_deleted = database.query(models.Entity).filter(models.Entity.type == type_name).delete(synchronize_session=False)
-
-        # Delete entity type record
-        database.query(models.EntityType).filter(models.EntityType.name == type_name).delete(synchronize_session=False)
+        # If no entities and no type, return 404
+        if not entity_ids and type_count == 0:
+            raise HTTPException(status_code=404, detail=f"Entity type '{type_name}' not found")
+        
+        # Delete related relations first (only for this user's entities)
+        relations_deleted = 0
+        if entity_ids:
+            relations_deleted = database.query(models.Relation).filter(
+                models.Relation.user_id == current_user.id,
+                (models.Relation.source_id.in_(entity_ids)) | (models.Relation.target_id.in_(entity_ids))
+            ).delete(synchronize_session=False)
+            
+            # Delete entities
+            entities_deleted = database.query(models.Entity).filter(
+                models.Entity.type == type_name,
+                models.Entity.user_id == current_user.id
+            ).delete(synchronize_session=False)
+        else:
+            entities_deleted = 0
         
         database.commit()
-        return {"ok": True, "deleted_entities": entities_deleted, "deleted_relations": relations_deleted}
+        return {"ok": True, "deleted_entities": entities_deleted, "deleted_relations": relations_deleted, "deleted_type": type_count}
     except HTTPException:
         raise
     except Exception as e:
@@ -504,18 +574,31 @@ def rename_relation_type(
         raise HTTPException(status_code=500, detail=f"Failed to rename type: {str(e)}")
 
 @router.delete("/relations/types/{type_name}")
-def delete_relation_type(type_name: str, database: Session = Depends(get_db)):
-    """Delete all relations with specified type"""
+def delete_relation_type(
+    type_name: str,
+    database: Session = Depends(get_db),
+    current_user: models.User = Depends(get_current_user)
+):
+    """Delete all relations with specified type AND the type itself"""
     try:
-        count = database.query(models.Relation).filter(models.Relation.relation_type == type_name).delete(synchronize_session=False)
+        # Delete relations with this type
+        rel_count = database.query(models.Relation).filter(
+            models.Relation.relation_type == type_name,
+            models.Relation.user_id == current_user.id
+        ).delete(synchronize_session=False)
         
-        if count == 0:
-            raise HTTPException(status_code=404, detail=f"No relations found with type '{type_name}'")
-
-        database.query(models.RelationType).filter(models.RelationType.name == type_name).delete(synchronize_session=False)
+        # Delete the RelationType itself (whether or not relations existed)
+        type_count = database.query(models.RelationType).filter(
+            models.RelationType.name == type_name,
+            models.RelationType.user_id == current_user.id
+        ).delete(synchronize_session=False)
+        
+        # If neither relations nor type existed, return 404
+        if rel_count == 0 and type_count == 0:
+            raise HTTPException(status_code=404, detail=f"Relation type '{type_name}' not found")
         
         database.commit()
-        return {"ok": True, "deleted_count": count}
+        return {"ok": True, "deleted_relations": rel_count, "deleted_type": type_count}
     except HTTPException:
         raise
     except Exception as e:

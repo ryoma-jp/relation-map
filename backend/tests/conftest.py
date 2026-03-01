@@ -148,9 +148,9 @@ def authenticated_client(client, auth_headers):
 
 
 @pytest.fixture
-def sample_entity_type(db_session):
+def sample_entity_type(db_session, sample_user):
     """Create a sample entity type."""
-    entity_type = models.EntityType(name="Person")
+    entity_type = models.EntityType(name="Person", user_id=sample_user.id)
     db_session.add(entity_type)
     db_session.commit()
     db_session.refresh(entity_type)
@@ -158,12 +158,12 @@ def sample_entity_type(db_session):
 
 
 @pytest.fixture
-def sample_entity_types(db_session):
+def sample_entity_types(db_session, sample_user):
     """Create multiple sample entity types."""
     types_data = [
-        {"name": "Person"},
-        {"name": "Organization"},
-        {"name": "Place"},
+        {"name": "Person", "user_id": sample_user.id},
+        {"name": "Organization", "user_id": sample_user.id},
+        {"name": "Place", "user_id": sample_user.id},
     ]
     types = []
     for type_data in types_data:

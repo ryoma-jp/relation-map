@@ -289,7 +289,7 @@ export async function renameEntityType(oldType: string, newType: string): Promis
   return response.json();
 }
 
-export async function deleteEntityType(typeName: string): Promise<{ ok: boolean; deleted_entities: number; deleted_relations: number }> {
+export async function deleteEntityType(typeName: string): Promise<{ ok: boolean; deleted_entities: number; deleted_relations: number; deleted_type: number }> {
   const response = await fetch(
     `${API_URL}/entities/types/${encodeURIComponent(typeName)}`,
     withAuthHeaders({ method: 'DELETE' })
@@ -350,7 +350,7 @@ export async function renameRelationType(oldType: string, newType: string): Prom
   return response.json();
 }
 
-export async function deleteRelationType(typeName: string): Promise<{ ok: boolean; deleted_count: number }> {
+export async function deleteRelationType(typeName: string): Promise<{ ok: boolean; deleted_relations: number; deleted_type: number }> {
   const response = await fetch(
     `${API_URL}/relations/types/${encodeURIComponent(typeName)}`,
     withAuthHeaders({ method: 'DELETE' })

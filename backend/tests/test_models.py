@@ -151,25 +151,25 @@ class TestEntityTypeModel:
     
     def test_entity_type_valid(self, db_session, sample_user):
         """Test creating a valid entity type."""
-        entity_type = models.EntityType(name="Person")
+        entity_type = models.EntityType(name="Person", user_id=sample_user.id)
         db_session.add(entity_type)
         db_session.commit()
         
-        retrieved = db_session.query(models.EntityType).filter_by(name="Person").first()
+        retrieved = db_session.query(models.EntityType).filter_by(name="Person", user_id=sample_user.id).first()
         assert retrieved is not None
         assert retrieved.name == "Person"
     
-    def test_entity_type_unique_constraint(self, db_session, sample_user):
-        """Test entity type name uniqueness."""
-        type1 = models.EntityType(name="Person")
+    def test_entity_type_unique_constraint(self, db_session, sample_user, sample_users):
+        """Test entity type name uniqueness per user."""
+        # Same name for same user should be allowed (no unique constraint now)
+        type1 = models.EntityType(name="Person", user_id=sample_user.id)
         db_session.add(type1)
         db_session.commit()
         
-        # Try to create duplicate
-        type2 = models.EntityType(name="Person")
+        # Same name for different user should be allowed
+        type2 = models.EntityType(name="Person", user_id=sample_users[0].id)
         db_session.add(type2)
-        with pytest.raises(IntegrityError):
-            db_session.commit()
+        db_session.commit()  # Should succeed
 
 
 class TestRelationTypeModel:

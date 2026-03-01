@@ -139,23 +139,49 @@ export function TypeManagementDialog({ entities, relations, manuallyAddedEntityT
     setError('');
 
     try {
-      // 使用数が0件の場合（新規追加されたタイプ）はローカル状態から削除
-      if (confirmDelete.count === 0) {
-        await onRemoveType(confirmDelete.category, confirmDelete.type);
+      // 使用数がある場合はAPIで削除（関連データも含めて削除）
+      if (confirmDelete.count > 0) {
+        if (confirmDelete.category === 'entity') {
+          await deleteEntityType(confirmDelete.type);
+        } else {
+          await deleteRelationType(confirmDelete.type);
+        }
+      } else {
+        // 使用数が0件の場合はタイプ定義のみ削除
+        try {
+          await onRemoveType(confirmDelete.category, confirmDelete.type);
+        } catch (err) {
+          // 404エラーの場合はサンプルデータなので無視
+          const errorMsg = err instanceof Error ? err.message : '';
+          if (!errorMsg.includes('not found') && !errorMsg.includes('404')) {
+            throw err;
+          }
+        }
+
+        // count=0 の削除では relations/entities は変化しないため、
+        // onRemoveType 側の type 再読込のみで十分
         setConfirmDelete(null);
         return;
       }
-
-      // 使用数がある場合はAPIで削除
-      if (confirmDelete.category === 'entity') {
-         await deleteEntityType(confirmDelete.type);
-      } else {
-         await deleteRelationType(confirmDelete.type);
-      }
-      setConfirmDelete(null);
+      
+      // 削除後にデータを更新
       await onUpdate();
+      setConfirmDelete(null);
+      
+      // 削除成功後はダイアログを閉じて、次回開いた時に最新のデータを表示
+      onClose();
     } catch (err) {
-      setError(err instanceof Error ? err.message : '削除に失敗しました');
+      const errorMsg = err instanceof Error ? err.message : '削除に失敗しました';
+      
+      // APIエラー時の処理
+      if (errorMsg.includes('not found') || errorMsg.includes('404')) {
+        // サンプルデータ由来のタイプはローカルから削除し、再フェッチで上書きしない
+        await onRemoveType(confirmDelete.category, confirmDelete.type);
+        setConfirmDelete(null);
+        onClose();
+      } else {
+        setError(errorMsg);
+      }
     } finally {
       setLoading(false);
     }
