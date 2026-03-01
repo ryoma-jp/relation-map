@@ -373,35 +373,45 @@ function AppContent() {
     if (confirmState.open) {
       if (confirmState.type === 'deleteEntity') {
         const existsInDb = apiEntities.some(e => e.id === confirmState.id);
+        const existsLocally = localEntities.some(e => e.id === confirmState.id);
         
         if (existsInDb) {
           await deleteEntity(confirmState.id!);
-        } else if (isUsingSampleData) {
+          // 削除後 refetch して DB 状態を反映
+          await refetchEntities();
+          await refetchRelations();
+        } else if (existsLocally) {
+          // Entity exists in local state but not in DB (sample data or local-only)
+          // ローカルのみで削除し、refetch は呼ばない（refetch が削除を上書きするのを防ぐ）
           setLocalEntities(prev => prev.filter(e => e.id !== confirmState.id));
           setLocalRelations(prev =>
             prev.filter(
               r => r.source_id !== confirmState.id && r.target_id !== confirmState.id
             )
           );
+          // ローカル削除はデータ操作なのでサンプルモード脱出と判定
+          setHasExitedSampleMode(true);
         } else {
-          console.warn(`Entity with id ${confirmState.id} not found in DB`);
+          console.warn(`Entity with id ${confirmState.id} not found`);
         }
-        // 削除後は両方 refetch
-        await refetchEntities();
-        await refetchRelations();
       } else if (confirmState.type === 'deleteRelation') {
         const existsInDb = apiRelations.some(r => r.id === confirmState.id);
+        const existsLocally = localRelations.some(r => r.id === confirmState.id);
         
         if (existsInDb) {
           await deleteRelation(confirmState.id!);
-        } else if (isUsingSampleData) {
+          // 削除後 refetch して DB 状態を反映
+          await refetchEntities();
+          await refetchRelations();
+        } else if (existsLocally) {
+          // Relation exists in local state but not in DB (sample data or local-only)
+          // ローカルのみで削除し、refetch は呼ばない（refetch が削除を上書きするのを防ぐ）
           setLocalRelations(prev => prev.filter(r => r.id !== confirmState.id));
+          // ローカル削除はデータ操作なのでサンプルモード脱出と判定
+          setHasExitedSampleMode(true);
         } else {
-          console.warn(`Relation with id ${confirmState.id} not found in DB`);
+          console.warn(`Relation with id ${confirmState.id} not found`);
         }
-        // 削除後は両方 refetch
-        await refetchEntities();
-        await refetchRelations();
       } else if (confirmState.type === 'resetData') {
         try {
           await resetAllData();
