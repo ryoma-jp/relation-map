@@ -42,6 +42,7 @@ function AppContent() {
   const [viewingEntity, setViewingEntity] = useState<Entity | null>(null);
   const [manuallyAddedEntityTypes, setManuallyAddedEntityTypes] = useState<string[]>([]);
   const [manuallyAddedRelationTypes, setManuallyAddedRelationTypes] = useState<string[]>([]);
+  const [hasExitedSampleMode, setHasExitedSampleMode] = useState(false);
 
   const loadTypes = async () => {
     try {
@@ -76,6 +77,13 @@ function AppContent() {
   useEffect(() => {
     loadTypes();
   }, []);
+
+  // サンプルモード脱出フラグの管理
+  useEffect(() => {
+    if (apiEntities.length > 0 || apiRelations.length > 0) {
+      setHasExitedSampleMode(true);
+    }
+  }, [apiEntities, apiRelations]);
 
   // debounce処理
   useEffect(() => {
@@ -144,8 +152,8 @@ function AppContent() {
     });
   }, [localRelations, visibleRelationTypes, filteredEntities]);
 
-  // 使用するデータがサンプルか判定
-  const isUsingSampleData = apiEntities.length === 0;
+  // 使用するデータがサンプルか判定（entities と relations 両方空で、かつサンプルモードを脱出していない場合）
+  const isUsingSampleData = apiEntities.length === 0 && apiRelations.length === 0 && !hasExitedSampleMode;
 
   if (activeView === 'admin' && user) {
     return <AdminPage currentUser={user} onBack={() => setActiveView('main')} />;
@@ -346,11 +354,13 @@ function AppContent() {
           } else {
             await createRelation(data);
             await refetchRelations();
+            await refetchEntities();
           }
         }
       } else {
         await createRelation(data);
         await refetchRelations();
+        await refetchEntities();
       }
       setModalState('closed');
     } catch (err) {
@@ -366,8 +376,6 @@ function AppContent() {
         
         if (existsInDb) {
           await deleteEntity(confirmState.id!);
-          await refetchEntities();
-          await refetchRelations();
         } else if (isUsingSampleData) {
           setLocalEntities(prev => prev.filter(e => e.id !== confirmState.id));
           setLocalRelations(prev =>
@@ -377,20 +385,23 @@ function AppContent() {
           );
         } else {
           console.warn(`Entity with id ${confirmState.id} not found in DB`);
-          await refetchEntities();
         }
+        // 削除後は両方 refetch
+        await refetchEntities();
+        await refetchRelations();
       } else if (confirmState.type === 'deleteRelation') {
         const existsInDb = apiRelations.some(r => r.id === confirmState.id);
         
         if (existsInDb) {
           await deleteRelation(confirmState.id!);
-          await refetchRelations();
         } else if (isUsingSampleData) {
           setLocalRelations(prev => prev.filter(r => r.id !== confirmState.id));
         } else {
           console.warn(`Relation with id ${confirmState.id} not found in DB`);
-          await refetchRelations();
         }
+        // 削除後は両方 refetch
+        await refetchEntities();
+        await refetchRelations();
       } else if (confirmState.type === 'resetData') {
         try {
           await resetAllData();
@@ -399,6 +410,9 @@ function AppContent() {
         } catch (err) {
           console.error("Failed to reset data:", err);
           alert("データのリセットに失敗しました");
+        } finally {
+          // リセット後はサンプルモード脱出フラグをリセットしてバナーが表示されるようにする
+          setHasExitedSampleMode(false);
         }
       }
       setConfirmState({ open: false });
