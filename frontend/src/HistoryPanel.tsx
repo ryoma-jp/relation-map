@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { fetchVersions, restoreVersion, createCheckpoint, VersionInfo } from './api';
 import './HistoryPanel.css';
 
@@ -12,22 +12,35 @@ const HistoryPanel: React.FC<HistoryPanelProps> = ({ onRefresh }) => {
   const [showInput, setShowInput] = useState(false);
   const [description, setDescription] = useState('');
   const [error, setError] = useState<string | null>(null);
+  const isMountedRef = useRef(true);
 
   const loadVersions = async () => {
-    setIsLoading(true);
-    setError(null);
+    if (isMountedRef.current) {
+      setIsLoading(true);
+      setError(null);
+    }
     try {
       const data = await fetchVersions();
-      setVersions(data);
+      if (isMountedRef.current) {
+        setVersions(data);
+      }
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to load versions');
+      if (isMountedRef.current) {
+        setError(err instanceof Error ? err.message : 'Failed to load versions');
+      }
     } finally {
-      setIsLoading(false);
+      if (isMountedRef.current) {
+        setIsLoading(false);
+      }
     }
   };
 
   useEffect(() => {
     loadVersions();
+    
+    return () => {
+      isMountedRef.current = false;
+    };
   }, []);
 
   const handleCreateCheckpoint = async () => {

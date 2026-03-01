@@ -1,5 +1,5 @@
 import React from 'react';
-import { render, screen } from '@testing-library/react';
+import { render, screen, waitFor } from '@testing-library/react';
 import App from './App';
 
 jest.mock('./Graph', () => () => <div data-testid="graph">Graph Component</div>);
@@ -34,15 +34,25 @@ jest.mock('./api', () => ({
 }));
 
 describe('App', () => {
-  it('renders header with title', () => {
+  it('renders header with title', async () => {
     render(<App />);
 
     expect(screen.getByText('Relation Map')).toBeInTheDocument();
+    
+    // Wait for async effects to complete
+    await waitFor(() => {
+      expect(screen.getByText('Relation Map')).toBeInTheDocument();
+    });
   });
 
-  it('renders graph component', () => {
+  it('renders graph component', async () => {
     render(<App />);
 
     expect(screen.getByTestId('graph')).toBeInTheDocument();
+    
+    // Wait for async effects to complete
+    await waitFor(() => {
+      expect(screen.getByTestId('graph')).toBeInTheDocument();
+    });
   });
 });

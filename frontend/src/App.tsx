@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { debounce } from 'lodash';
 import { useEntities, useRelations, Entity, Relation, createEntity, updateEntity, deleteEntity, createRelation, updateRelation, deleteRelation, resetAllData, exportData, importData, fetchEntityTypes, fetchRelationTypes, createEntityType, createRelationType, deleteEntityTypeOnly, deleteRelationTypeOnly, fetchEntitiesList } from './api';
 import { useAuth } from './AuthContext';
@@ -20,6 +20,7 @@ function AppContent() {
   const { user, logout } = useAuth();
   const { entities: apiEntities, refetch: refetchEntities } = useEntities();
   const { relations: apiRelations, refetch: refetchRelations } = useRelations();
+  const isMountedRef = useRef(true);
 
   // ローカルバックアップ状態
   const [localEntities, setLocalEntities] = useState<Entity[]>([]);
@@ -50,10 +51,14 @@ function AppContent() {
         fetchEntityTypes(),
         fetchRelationTypes(),
       ]);
-      setManuallyAddedEntityTypes(entityTypes);
-      setManuallyAddedRelationTypes(relationTypes);
+      if (isMountedRef.current) {
+        setManuallyAddedEntityTypes(entityTypes);
+        setManuallyAddedRelationTypes(relationTypes);
+      }
     } catch (error) {
-      console.error('Failed to load types:', error);
+      if (isMountedRef.current) {
+        console.error('Failed to load types:', error);
+      }
     }
   };
 
@@ -76,6 +81,10 @@ function AppContent() {
 
   useEffect(() => {
     loadTypes();
+
+    return () => {
+      isMountedRef.current = false;
+    };
   }, []);
 
   // サンプルモード脱出フラグの管理
@@ -102,12 +111,14 @@ function AppContent() {
   const entityTypes = useMemo(() => {
     const types = Array.from(new Set(localEntities.map(e => e.type)));
     // 手動で追加されたタイプも含める
-    return Array.from(new Set([...types, ...manuallyAddedEntityTypes])).sort();
+    const manualTypes = Array.isArray(manuallyAddedEntityTypes) ? manuallyAddedEntityTypes : [];
+    return Array.from(new Set([...types, ...manualTypes])).sort();
   }, [localEntities, manuallyAddedEntityTypes]);
   const relationTypes = useMemo(() => {
     const types = Array.from(new Set(localRelations.map(r => r.relation_type)));
     // 手動で追加されたタイプも含める
-    return Array.from(new Set([...types, ...manuallyAddedRelationTypes])).sort();
+    const manualTypes = Array.isArray(manuallyAddedRelationTypes) ? manuallyAddedRelationTypes : [];
+    return Array.from(new Set([...types, ...manualTypes])).sort();
   }, [localRelations, manuallyAddedRelationTypes]);
 
   // 初期化：すべてのタイプを表示
