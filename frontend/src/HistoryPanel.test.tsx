@@ -35,10 +35,15 @@ describe('HistoryPanel', () => {
     (versionApi.createCheckpoint as jest.Mock).mockResolvedValue(mockVersions[1]);
   });
 
-  test('renders history panel', () => {
+  test('renders history panel', async () => {
     render(<HistoryPanel />);
     expect(screen.getByText('Version History')).toBeInTheDocument();
     expect(screen.getByText('+ Checkpoint')).toBeInTheDocument();
+    
+    // Wait for the async fetchVersions to complete
+    await waitFor(() => {
+      expect(versionApi.fetchVersions).toHaveBeenCalled();
+    });
   });
 
   test('displays versions', async () => {
@@ -195,5 +200,10 @@ describe('HistoryPanel', () => {
     
     const checkpointBtn = screen.getByText('+ Checkpoint');
     expect(checkpointBtn).toBeDisabled();
+    
+    // Wait for the async operation to complete before unmounting
+    await waitFor(() => {
+      expect(checkpointBtn).not.toBeDisabled();
+    });
   });
 });
