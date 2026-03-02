@@ -148,7 +148,7 @@ export async function fetchAdminUsers(params: {
   if (typeof params.limit === 'number') searchParams.set('limit', String(params.limit));
   if (typeof params.offset === 'number') searchParams.set('offset', String(params.offset));
 
-  const response = await fetch(`${API_URL}/admin/users?${searchParams.toString()}`, {
+  const response = await fetch(`${API_URL}/api/admin/users?${searchParams.toString()}`, {
     headers: buildAuthHeaders(false),
   });
   if (!response.ok) throw new Error(`Failed to fetch users: ${response.statusText}`);
@@ -156,7 +156,7 @@ export async function fetchAdminUsers(params: {
 }
 
 export async function deleteAdminUser(userId: number): Promise<{ ok: boolean }> {
-  const response = await fetch(`${API_URL}/admin/users/${userId}`, withAuthHeaders({ method: 'DELETE' }));
+  const response = await fetch(`${API_URL}/api/admin/users/${userId}`, withAuthHeaders({ method: 'DELETE' }));
   if (!response.ok) {
     const message = await readErrorMessage(response, `Failed to delete user: ${response.statusText}`);
     throw new Error(message);
@@ -178,7 +178,7 @@ export async function fetchAuditLogs(params: {
   if (typeof params.actorUserId === 'number') searchParams.set('actor_user_id', String(params.actorUserId));
   if (typeof params.targetUserId === 'number') searchParams.set('target_user_id', String(params.targetUserId));
 
-  const response = await fetch(`${API_URL}/admin/audit-logs?${searchParams.toString()}`, {
+  const response = await fetch(`${API_URL}/api/admin/audit-logs?${searchParams.toString()}`, {
     headers: buildAuthHeaders(false),
   });
   if (!response.ok) throw new Error(`Failed to fetch audit logs: ${response.statusText}`);
@@ -187,7 +187,7 @@ export async function fetchAuditLogs(params: {
 
 // Entities API
 export async function createEntity(data: Omit<Entity, 'id'>): Promise<Entity> {
-  const res = await fetch(`${API_URL}/entities/`, {
+  const res = await fetch(`${API_URL}/api/entities/`, {
     method: 'POST',
     headers: buildAuthHeaders(true),
     body: JSON.stringify(data),
@@ -197,7 +197,7 @@ export async function createEntity(data: Omit<Entity, 'id'>): Promise<Entity> {
 }
 
 export async function updateEntity(id: number, data: Omit<Entity, 'id'>): Promise<Entity> {
-  const res = await fetch(`${API_URL}/entities/${id}`, {
+  const res = await fetch(`${API_URL}/api/entities/${id}`, {
     method: 'PUT',
     headers: buildAuthHeaders(true),
     body: JSON.stringify(data),
@@ -207,13 +207,13 @@ export async function updateEntity(id: number, data: Omit<Entity, 'id'>): Promis
 }
 
 export async function deleteEntity(id: number): Promise<void> {
-  const res = await fetch(`${API_URL}/entities/${id}`, withAuthHeaders({ method: 'DELETE' }));
+  const res = await fetch(`${API_URL}/api/entities/${id}`, withAuthHeaders({ method: 'DELETE' }));
   if (!res.ok) throw new Error(`Failed to delete entity: ${res.statusText}`);
 }
 
 // Relations API
 export async function createRelation(data: Omit<Relation, 'id'>): Promise<Relation> {
-  const res = await fetch(`${API_URL}/relations/`, {
+  const res = await fetch(`${API_URL}/api/relations/`, {
     method: 'POST',
     headers: buildAuthHeaders(true),
     body: JSON.stringify(data),
@@ -223,7 +223,7 @@ export async function createRelation(data: Omit<Relation, 'id'>): Promise<Relati
 }
 
 export async function updateRelation(id: number, data: Omit<Relation, 'id'>): Promise<Relation> {
-  const res = await fetch(`${API_URL}/relations/${id}`, {
+  const res = await fetch(`${API_URL}/api/relations/${id}`, {
     method: 'PUT',
     headers: buildAuthHeaders(true),
     body: JSON.stringify(data),
@@ -233,13 +233,13 @@ export async function updateRelation(id: number, data: Omit<Relation, 'id'>): Pr
 }
 
 export async function deleteRelation(id: number): Promise<void> {
-  const res = await fetch(`${API_URL}/relations/${id}`, withAuthHeaders({ method: 'DELETE' }));
+  const res = await fetch(`${API_URL}/api/relations/${id}`, withAuthHeaders({ method: 'DELETE' }));
   if (!res.ok) throw new Error(`Failed to delete relation: ${res.statusText}`);
 }
 
 // Data management API
 export async function resetAllData(): Promise<{ ok: boolean; message: string }> {
-  const res = await fetch(`${API_URL}/reset`, {
+  const res = await fetch(`${API_URL}/api/reset`, {
     method: 'POST',
     headers: buildAuthHeaders(true),
   });
@@ -250,8 +250,8 @@ export async function resetAllData(): Promise<{ ok: boolean; message: string }> 
 export async function exportData(): Promise<Blob> {
   const headers = buildAuthHeaders(false);
   const response = headers
-    ? await fetch(`${API_URL}/export`, { headers })
-    : await fetch(`${API_URL}/export`);
+    ? await fetch(`${API_URL}/api/export`, { headers })
+    : await fetch(`${API_URL}/api/export`);
   if (!response.ok) {
     throw new Error('Export failed');
   }
@@ -262,7 +262,7 @@ export async function importData(
   data: any,
   mode: 'merge' | 'replace' = 'merge'
 ): Promise<{ ok: boolean; imported_entities: number; imported_relations: number }> {
-  const response = await fetch(`${API_URL}/import?mode=${mode}`, {
+  const response = await fetch(`${API_URL}/api/import?mode=${mode}`, {
     method: 'POST',
     headers: buildAuthHeaders(true),
     body: JSON.stringify(data),
@@ -279,7 +279,7 @@ export async function importData(
 // Type management API
 export async function renameEntityType(oldType: string, newType: string): Promise<{ ok: boolean; updated_count: number }> {
   const response = await fetch(
-    `${API_URL}/entities/types/${encodeURIComponent(oldType)}?new_type=${encodeURIComponent(newType)}`,
+    `${API_URL}/api/entities/types/${encodeURIComponent(oldType)}?new_type=${encodeURIComponent(newType)}`,
     withAuthHeaders({ method: 'PUT' })
   );
   if (!response.ok) {
@@ -291,7 +291,7 @@ export async function renameEntityType(oldType: string, newType: string): Promis
 
 export async function deleteEntityType(typeName: string): Promise<{ ok: boolean; deleted_entities: number; deleted_relations: number; deleted_type: number }> {
   const response = await fetch(
-    `${API_URL}/entities/types/${encodeURIComponent(typeName)}`,
+    `${API_URL}/api/entities/types/${encodeURIComponent(typeName)}`,
     withAuthHeaders({ method: 'DELETE' })
   );
   if (!response.ok) {
@@ -304,8 +304,8 @@ export async function deleteEntityType(typeName: string): Promise<{ ok: boolean;
 export async function fetchEntityTypes(): Promise<string[]> {
   const headers = buildAuthHeaders(false);
   const response = headers
-    ? await fetch(`${API_URL}/entities/types`, { headers })
-    : await fetch(`${API_URL}/entities/types`);
+    ? await fetch(`${API_URL}/api/entities/types`, { headers })
+    : await fetch(`${API_URL}/api/entities/types`);
   if (!response.ok) {
     const error = await response.json();
     throw new Error(error.detail || 'Failed to fetch entity types');
@@ -314,7 +314,7 @@ export async function fetchEntityTypes(): Promise<string[]> {
 }
 
 export async function createEntityType(typeName: string): Promise<{ ok: boolean; name: string }> {
-  const response = await fetch(`${API_URL}/entities/types`, {
+  const response = await fetch(`${API_URL}/api/entities/types`, {
     method: 'POST',
     headers: buildAuthHeaders(true),
     body: JSON.stringify({ name: typeName }),
@@ -328,7 +328,7 @@ export async function createEntityType(typeName: string): Promise<{ ok: boolean;
 
 export async function deleteEntityTypeOnly(typeName: string): Promise<{ ok: boolean }> {
   const response = await fetch(
-    `${API_URL}/entities/types/${encodeURIComponent(typeName)}/only`,
+    `${API_URL}/api/entities/types/${encodeURIComponent(typeName)}/only`,
     withAuthHeaders({ method: 'DELETE' })
   );
   if (!response.ok) {
@@ -340,7 +340,7 @@ export async function deleteEntityTypeOnly(typeName: string): Promise<{ ok: bool
 
 export async function renameRelationType(oldType: string, newType: string): Promise<{ ok: boolean; updated_count: number }> {
   const response = await fetch(
-    `${API_URL}/relations/types/${encodeURIComponent(oldType)}?new_type=${encodeURIComponent(newType)}`,
+    `${API_URL}/api/relations/types/${encodeURIComponent(oldType)}?new_type=${encodeURIComponent(newType)}`,
     withAuthHeaders({ method: 'PUT' })
   );
   if (!response.ok) {
@@ -352,7 +352,7 @@ export async function renameRelationType(oldType: string, newType: string): Prom
 
 export async function deleteRelationType(typeName: string): Promise<{ ok: boolean; deleted_relations: number; deleted_type: number }> {
   const response = await fetch(
-    `${API_URL}/relations/types/${encodeURIComponent(typeName)}`,
+    `${API_URL}/api/relations/types/${encodeURIComponent(typeName)}`,
     withAuthHeaders({ method: 'DELETE' })
   );
   if (!response.ok) {
@@ -365,8 +365,8 @@ export async function deleteRelationType(typeName: string): Promise<{ ok: boolea
 export async function fetchRelationTypes(): Promise<string[]> {
   const headers = buildAuthHeaders(false);
   const response = headers
-    ? await fetch(`${API_URL}/relations/types`, { headers })
-    : await fetch(`${API_URL}/relations/types`);
+    ? await fetch(`${API_URL}/api/relations/types`, { headers })
+    : await fetch(`${API_URL}/api/relations/types`);
   if (!response.ok) {
     const error = await response.json();
     throw new Error(error.detail || 'Failed to fetch relation types');
@@ -375,7 +375,7 @@ export async function fetchRelationTypes(): Promise<string[]> {
 }
 
 export async function createRelationType(typeName: string): Promise<{ ok: boolean; name: string }> {
-  const response = await fetch(`${API_URL}/relations/types`, {
+  const response = await fetch(`${API_URL}/api/relations/types`, {
     method: 'POST',
     headers: buildAuthHeaders(true),
     body: JSON.stringify({ name: typeName }),
@@ -389,7 +389,7 @@ export async function createRelationType(typeName: string): Promise<{ ok: boolea
 
 export async function deleteRelationTypeOnly(typeName: string): Promise<{ ok: boolean }> {
   const response = await fetch(
-    `${API_URL}/relations/types/${encodeURIComponent(typeName)}/only`,
+    `${API_URL}/api/relations/types/${encodeURIComponent(typeName)}/only`,
     withAuthHeaders({ method: 'DELETE' })
   );
   if (!response.ok) {
@@ -403,8 +403,8 @@ export async function deleteRelationTypeOnly(typeName: string): Promise<{ ok: bo
 export async function fetchEntitiesList(): Promise<Entity[]> {
   const headers = buildAuthHeaders(false);
   const res = headers
-    ? await fetch(`${API_URL}/entities/`, { headers })
-    : await fetch(`${API_URL}/entities/`);
+    ? await fetch(`${API_URL}/api/entities/`, { headers })
+    : await fetch(`${API_URL}/api/entities/`);
   if (!res.ok) throw new Error(`Failed to fetch entities: ${res.statusText}`);
   return res.json();
 }
@@ -419,8 +419,8 @@ export function useEntities(enabled: boolean = true) {
     }
     const headers = buildAuthHeaders(false);
     const res = headers
-      ? await fetch(`${API_URL}/entities/`, { headers })
-      : await fetch(`${API_URL}/entities/`);
+      ? await fetch(`${API_URL}/api/entities/`, { headers })
+      : await fetch(`${API_URL}/api/entities/`);
     if (res.status === 401) {
       setEntities([]);
       return;
@@ -447,8 +447,8 @@ export function useRelations(enabled: boolean = true) {
     }
     const headers = buildAuthHeaders(false);
     const res = headers
-      ? await fetch(`${API_URL}/relations/`, { headers })
-      : await fetch(`${API_URL}/relations/`);
+      ? await fetch(`${API_URL}/api/relations/`, { headers })
+      : await fetch(`${API_URL}/api/relations/`);
     if (res.status === 401) {
       setRelations([]);
       return;
@@ -493,8 +493,8 @@ export type FullVersion = {
 export async function fetchVersions(): Promise<VersionInfo[]> {
   const headers = buildAuthHeaders(false);
   const res = headers
-    ? await fetch(`${API_URL}/versions`, { headers })
-    : await fetch(`${API_URL}/versions`);
+    ? await fetch(`${API_URL}/api/versions`, { headers })
+    : await fetch(`${API_URL}/api/versions`);
   if (!res.ok) throw new Error(`Failed to fetch versions: ${res.statusText}`);
   return res.json();
 }
@@ -502,8 +502,8 @@ export async function fetchVersions(): Promise<VersionInfo[]> {
 export async function fetchVersion(versionId: number): Promise<FullVersion> {
   const headers = buildAuthHeaders(false);
   const res = headers
-    ? await fetch(`${API_URL}/versions/${versionId}`, { headers })
-    : await fetch(`${API_URL}/versions/${versionId}`);
+    ? await fetch(`${API_URL}/api/versions/${versionId}`, { headers })
+    : await fetch(`${API_URL}/api/versions/${versionId}`);
   if (!res.ok) throw new Error(`Failed to fetch version: ${res.statusText}`);
   return res.json();
 }
@@ -511,7 +511,7 @@ export async function fetchVersion(versionId: number): Promise<FullVersion> {
 export async function createCheckpoint(description?: string): Promise<VersionInfo> {
   const params = new URLSearchParams();
   if (description) params.append('description', description);
-  const res = await fetch(`${API_URL}/versions/create-checkpoint?${params}`, {
+  const res = await fetch(`${API_URL}/api/versions/create-checkpoint?${params}`, {
     method: 'POST',
     headers: buildAuthHeaders(true),
   });
@@ -522,7 +522,7 @@ export async function createCheckpoint(description?: string): Promise<VersionInf
 export async function restoreVersion(versionId: number, createBackup: boolean = true): Promise<{ ok: boolean; message: string; new_version_id: number }> {
   const params = new URLSearchParams();
   params.append('create_backup', createBackup.toString());
-  const res = await fetch(`${API_URL}/versions/${versionId}/restore?${params}`, {
+  const res = await fetch(`${API_URL}/api/versions/${versionId}/restore?${params}`, {
     method: 'POST',
     headers: buildAuthHeaders(true),
   });
