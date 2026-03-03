@@ -28,7 +28,7 @@ services:
     environment:
       - TZ=Asia/Tokyo
       - CI=true
-    command: sh -c "npm install --silent && npm test -- --watchAll=false --passWithNoTests"
+    command: sh -c "npm ci && npm test -- --watchAll=false --passWithNoTests"
 
   db-test:
     image: postgres:15

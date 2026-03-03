@@ -58,7 +58,7 @@ services:
       - ESLINT_NO_DEV_ERRORS=true
     depends_on:
       - backend-e2e
-    command: sh -c "npm install --silent && SKIP_PREFLIGHT_CHECK=true npm start"
+    command: sh -c "npm ci --silent && SKIP_PREFLIGHT_CHECK=true npm start"
     ports:
       - "3001:3000"
     networks:
