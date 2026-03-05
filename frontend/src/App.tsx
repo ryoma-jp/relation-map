@@ -66,18 +66,22 @@ function AppContent() {
   useEffect(() => {
     if (apiEntities.length > 0) {
       setLocalEntities(apiEntities);
-    } else {
+    } else if (!hasExitedSampleMode) {
       setLocalEntities(sampleEntities);
+    } else {
+      setLocalEntities([]);
     }
-  }, [apiEntities]);
+  }, [apiEntities, hasExitedSampleMode]);
 
   useEffect(() => {
     if (apiRelations.length > 0) {
       setLocalRelations(apiRelations);
-    } else {
+    } else if (!hasExitedSampleMode) {
       setLocalRelations(sampleRelations);
+    } else {
+      setLocalRelations([]);
     }
-  }, [apiRelations]);
+  }, [apiRelations, hasExitedSampleMode]);
 
   useEffect(() => {
     loadTypes();
