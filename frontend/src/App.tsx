@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useMemo, useRef } from 'react';
+import { flushSync } from 'react-dom';
 import { debounce } from 'lodash';
 import { useEntities, useRelations, Entity, Relation, createEntity, updateEntity, deleteEntity, createRelation, updateRelation, deleteRelation, resetAllData, exportData, importData, fetchEntityTypes, fetchRelationTypes, createEntityType, createRelationType, deleteEntityTypeOnly, deleteRelationTypeOnly, fetchEntitiesList } from './api';
 import { useAuth } from './AuthContext';
@@ -51,14 +52,20 @@ function AppContent() {
         fetchEntityTypes(),
         fetchRelationTypes(),
       ]);
+      console.log('[loadTypes] Fetched types:', { entityTypes, relationTypes });
       if (isMountedRef.current) {
+        // 状態更新を同時に行って batch 処理させる
         setManuallyAddedEntityTypes(entityTypes);
         setManuallyAddedRelationTypes(relationTypes);
+        // 戻り値として新しい値を返す
+        return { entityTypes, relationTypes };
       }
+      return null;
     } catch (error) {
       if (isMountedRef.current) {
         console.error('Failed to load types:', error);
       }
+      return null;
     }
   };
 
@@ -91,7 +98,26 @@ function AppContent() {
     };
   }, []);
 
+  // ユーザー認証後にタイプを再読み込み
+  useEffect(() => {
+    if (user) {
+      loadTypes();
+    }
+  }, [user]);
+
+  // TypeManagementDialog が閉じた時にタイプを再読み込み
+  const prevShowTypeManagementRef = useRef<boolean>(false);
+  useEffect(() => {
+    if (prevShowTypeManagementRef.current && !showTypeManagement) {
+      console.log('[App] TypeManagementDialog closed, reloading types');
+      loadTypes();
+    }
+    prevShowTypeManagementRef.current = showTypeManagement;
+  }, [showTypeManagement]);
+
   // サンプルモード脱出フラグの管理
+  // 実際のエンティティやリレーションが作成された時のみサンプルモードを脱出
+  // タイプだけを追加してもサンプルモードは継続
   useEffect(() => {
     if (apiEntities.length > 0 || apiRelations.length > 0) {
       setHasExitedSampleMode(true);
@@ -122,7 +148,14 @@ function AppContent() {
     const types = Array.from(new Set(localRelations.map(r => r.relation_type)));
     // 手動で追加されたタイプも含める
     const manualTypes = Array.isArray(manuallyAddedRelationTypes) ? manuallyAddedRelationTypes : [];
-    return Array.from(new Set([...types, ...manualTypes])).sort();
+    const result = Array.from(new Set([...types, ...manualTypes])).sort();
+    console.log('[relationTypes] Calculated:', { 
+      fromRelations: types, 
+      manualTypes, 
+      result,
+      localRelationsCount: localRelations.length 
+    });
+    return result;
   }, [localRelations, manuallyAddedRelationTypes]);
 
   // 初期化：すべてのタイプを表示
@@ -169,6 +202,14 @@ function AppContent() {
 
   // 使用するデータがサンプルか判定（entities と relations 両方空で、かつサンプルモードを脱出していない場合）
   const isUsingSampleData = apiEntities.length === 0 && apiRelations.length === 0 && !hasExitedSampleMode;
+  
+  console.log('[App] State:', { 
+    apiEntitiesCount: apiEntities.length, 
+    apiRelationsCount: apiRelations.length, 
+    hasExitedSampleMode, 
+    isUsingSampleData,
+    manuallyAddedRelationTypesCount: manuallyAddedRelationTypes.length
+  });
 
   if (activeView === 'admin' && user) {
     return <AdminPage currentUser={user} onBack={() => setActiveView('main')} />;
@@ -276,27 +317,8 @@ function AppContent() {
   };
 
   const handleRemoveType = async (category: 'entity' | 'relation', typeName: string) => {
-    // When using sample data, keep local state in sync so removed types don't reappear.
-    if (isUsingSampleData) {
-      if (category === 'relation') {
-        setLocalRelations(prev => prev.filter(r => r.relation_type !== typeName));
-      } else {
-        const entityIdsToRemove = new Set(
-          localEntities.filter(entity => entity.type === typeName).map(entity => entity.id)
-        );
-        setLocalEntities(prev => prev.filter(entity => entity.type !== typeName));
-        if (entityIdsToRemove.size > 0) {
-          setLocalRelations(prev =>
-            prev.filter(
-              relation =>
-                !entityIdsToRemove.has(relation.source_id) &&
-                !entityIdsToRemove.has(relation.target_id)
-            )
-          );
-        }
-      }
-    }
-
+    // 使用数0のタイプを削除する場合はローカルデータに影響しない
+    // API呼び出しのみ行う
     try {
       if (category === 'entity') {
         await deleteEntityTypeOnly(typeName);
@@ -304,8 +326,7 @@ function AppContent() {
         await deleteRelationTypeOnly(typeName);
       }
     } catch (error) {
-      // サンプルデータの場合、データベースにタイプが存在しないが、
-      // ローカルから削除したいので404エラーは無視する
+      // 404エラーの場合は無視（既に削除済み）
       const errorMsg = error instanceof Error ? error.message : '';
       if (!errorMsg.includes('not found') && !errorMsg.includes('404')) {
         throw error;
@@ -633,7 +654,17 @@ function AppContent() {
               {/* タイプ管理 */}
               <div style={styles.typeManagementSection}>
                 <button
-                  onClick={() => setShowTypeManagement(true)}
+                  onClick={async () => {
+                    const result = await loadTypes();
+                    if (result) {
+                      // 状態更新を同期的に実行（React が確実に最新の状態でコンポーネントを再レンダリング）
+                      flushSync(() => {
+                        setManuallyAddedEntityTypes(result.entityTypes);
+                        setManuallyAddedRelationTypes(result.relationTypes);
+                      });
+                    }
+                    setShowTypeManagement(true);
+                  }}
                   style={styles.typeManagementButton}
                 >
                   📋 タイプ管理
@@ -771,6 +802,7 @@ function AppContent() {
 
       {showTypeManagement && (
         <TypeManagementDialog
+          key={`typeManagementDialog-${showTypeManagement}`}
           entities={localEntities}
           relations={localRelations}
           manuallyAddedEntityTypes={manuallyAddedEntityTypes}

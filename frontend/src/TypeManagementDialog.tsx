@@ -1,5 +1,5 @@
-import React, { useState, useMemo } from 'react';
-import { Entity, Relation, renameEntityType, deleteEntityType, renameRelationType, deleteRelationType } from './api';
+import React, { useState, useMemo, useEffect } from 'react';
+import { Entity, Relation, renameEntityType, deleteEntityType, renameRelationType, deleteRelationType, fetchEntityTypes, fetchRelationTypes } from './api';
 
 type Props = {
   entities: Entity[];
@@ -24,6 +24,27 @@ export function TypeManagementDialog({ entities, relations, manuallyAddedEntityT
   const [addingType, setAddingType] = useState<{ category: 'entity' | 'relation'; value: string } | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+  // ダイアログ内で最新のタイプを保持
+  const [localEntityTypes, setLocalEntityTypes] = useState<string[]>(manuallyAddedEntityTypes);
+  const [localRelationTypes, setLocalRelationTypes] = useState<string[]>(manuallyAddedRelationTypes);
+
+  // ダイアログが開いた時に最新のタイプを取得
+  useEffect(() => {
+    const loadLatestTypes = async () => {
+      try {
+        const [entityTypes, relationTypes] = await Promise.all([
+          fetchEntityTypes(),
+          fetchRelationTypes(),
+        ]);
+        console.log('[TypeManagementDialog] Loaded latest types:', { entityTypes, relationTypes });
+        setLocalEntityTypes(entityTypes);
+        setLocalRelationTypes(relationTypes);
+      } catch (err) {
+        console.error('[TypeManagementDialog] Failed to load types:', err);
+      }
+    };
+    loadLatestTypes();
+  }, []); // マウント時のみ実行
 
   // エンティティタイプの集計
   const entityTypeStats = useMemo(() => {
@@ -31,8 +52,8 @@ export function TypeManagementDialog({ entities, relations, manuallyAddedEntityT
     entities.forEach(e => {
       stats.set(e.type, (stats.get(e.type) || 0) + 1);
     });
-    // 手動で追加されたタイプで、使用数0のものも含める
-    manuallyAddedEntityTypes.forEach(type => {
+    // ダイアログ内で取得した最新のタイプを使用
+    localEntityTypes.forEach(type => {
       if (!stats.has(type)) {
         stats.set(type, 0);
       }
@@ -40,7 +61,7 @@ export function TypeManagementDialog({ entities, relations, manuallyAddedEntityT
     return Array.from(stats.entries())
       .map(([type, count]) => ({ type, count }))
       .sort((a, b) => b.count - a.count);
-  }, [entities, manuallyAddedEntityTypes]);
+  }, [entities, localEntityTypes]);
 
   // リレーションタイプの集計
   const relationTypeStats = useMemo(() => {
@@ -48,16 +69,22 @@ export function TypeManagementDialog({ entities, relations, manuallyAddedEntityT
     relations.forEach(r => {
       stats.set(r.relation_type, (stats.get(r.relation_type) || 0) + 1);
     });
-    // 手動で追加されたタイプで、使用数0のものも含める
-    manuallyAddedRelationTypes.forEach(type => {
+    // ダイアログ内で取得した最新のタイプを使用
+    localRelationTypes.forEach(type => {
       if (!stats.has(type)) {
         stats.set(type, 0);
       }
     });
-    return Array.from(stats.entries())
+    const result = Array.from(stats.entries())
       .map(([type, count]) => ({ type, count }))
       .sort((a, b) => b.count - a.count);
-  }, [relations, manuallyAddedRelationTypes]);
+    console.log('[TypeManagementDialog] relationTypeStats calculated:', { 
+      localRelationTypes, 
+      relationsCount: relations.length, 
+      result 
+    });
+    return result;
+  }, [relations, localRelationTypes]);
 
   const handleAddType = async () => {
     if (!addingType || !addingType.value.trim()) {
@@ -141,46 +168,43 @@ export function TypeManagementDialog({ entities, relations, manuallyAddedEntityT
     try {
       // 使用数がある場合はAPIで削除（関連データも含めて削除）
       if (confirmDelete.count > 0) {
-        if (confirmDelete.category === 'entity') {
-          await deleteEntityType(confirmDelete.type);
-        } else {
-          await deleteRelationType(confirmDelete.type);
+        try {
+          if (confirmDelete.category === 'entity') {
+            await deleteEntityType(confirmDelete.type);
+          } else {
+            await deleteRelationType(confirmDelete.type);
+          }
+          // 削除成功後にデータを更新
+          await onUpdate();
+          setConfirmDelete(null);
+          // 削除成功後はダイアログを閉じる
+          onClose();
+        } catch (err) {
+          const errorMsg = err instanceof Error ? err.message : '削除に失敗しました';
+          // 404エラーの場合はサンプルデータ由来なので、ローカル状態のみ削除
+          if (errorMsg.includes('not found') || errorMsg.includes('404')) {
+            await onRemoveType(confirmDelete.category, confirmDelete.type);
+            setConfirmDelete(null);
+            // サンプルデータの削除なのでダイアログは閉じずに続行
+          } else {
+            setError(errorMsg);
+          }
         }
       } else {
         // 使用数が0件の場合はタイプ定義のみ削除
         try {
           await onRemoveType(confirmDelete.category, confirmDelete.type);
+          setConfirmDelete(null);
+          // タイプのみ削除なのでダイアログは閉じずに続行
         } catch (err) {
-          // 404エラーの場合はサンプルデータなので無視
+          // 404エラーの場合は無視（既に存在しない）
           const errorMsg = err instanceof Error ? err.message : '';
           if (!errorMsg.includes('not found') && !errorMsg.includes('404')) {
-            throw err;
+            setError(err instanceof Error ? err.message : 'タイプ削除に失敗しました');
+          } else {
+            setConfirmDelete(null);
           }
         }
-
-        // count=0 の削除では relations/entities は変化しないため、
-        // onRemoveType 側の type 再読込のみで十分
-        setConfirmDelete(null);
-        return;
-      }
-      
-      // 削除後にデータを更新
-      await onUpdate();
-      setConfirmDelete(null);
-      
-      // 削除成功後はダイアログを閉じて、次回開いた時に最新のデータを表示
-      onClose();
-    } catch (err) {
-      const errorMsg = err instanceof Error ? err.message : '削除に失敗しました';
-      
-      // APIエラー時の処理
-      if (errorMsg.includes('not found') || errorMsg.includes('404')) {
-        // サンプルデータ由来のタイプはローカルから削除し、再フェッチで上書きしない
-        await onRemoveType(confirmDelete.category, confirmDelete.type);
-        setConfirmDelete(null);
-        onClose();
-      } else {
-        setError(errorMsg);
       }
     } finally {
       setLoading(false);

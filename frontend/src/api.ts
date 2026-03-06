@@ -304,8 +304,11 @@ export async function deleteEntityType(typeName: string): Promise<{ ok: boolean;
 export async function fetchEntityTypes(): Promise<string[]> {
   const headers = buildAuthHeaders(false);
   const response = headers
-    ? await fetch(`${API_URL}/api/entities/types`, { headers })
-    : await fetch(`${API_URL}/api/entities/types`);
+    ? await fetch(`${API_URL}/api/entities/types`, { headers, cache: 'no-cache' })
+    : await fetch(`${API_URL}/api/entities/types`, { cache: 'no-cache' });
+  if (response.status === 401) {
+    return [];
+  }
   if (!response.ok) {
     const error = await response.json();
     throw new Error(error.detail || 'Failed to fetch entity types');
@@ -365,8 +368,11 @@ export async function deleteRelationType(typeName: string): Promise<{ ok: boolea
 export async function fetchRelationTypes(): Promise<string[]> {
   const headers = buildAuthHeaders(false);
   const response = headers
-    ? await fetch(`${API_URL}/api/relations/types`, { headers })
-    : await fetch(`${API_URL}/api/relations/types`);
+    ? await fetch(`${API_URL}/api/relations/types`, { headers, cache: 'no-cache' })
+    : await fetch(`${API_URL}/api/relations/types`, { cache: 'no-cache' });
+  if (response.status === 401) {
+    return [];
+  }
   if (!response.ok) {
     const error = await response.json();
     throw new Error(error.detail || 'Failed to fetch relation types');

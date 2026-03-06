@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Relation, Entity } from './api';
+import { Relation, Entity, fetchRelationTypes } from './api';
 
 type Props = {
   relation?: Relation;
@@ -13,17 +13,32 @@ export default function RelationModal({ relation, entities, existingTypes, onSav
   const [sourceId, setSourceId] = useState<number | ''>('');
   const [targetId, setTargetId] = useState<number | ''>('');
   const [relationType, setRelationType] = useState('');
+  const [availableTypes, setAvailableTypes] = useState<string[]>([]);
   const [description, setDescription] = useState('');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
-    if (existingTypes.length > 0 && !relationType) {
-      setRelationType(existingTypes[0]);
+    const loadModalTypes = async () => {
+      try {
+        const latestTypes = await fetchRelationTypes();
+        const merged = Array.from(new Set([...existingTypes, ...latestTypes])).sort();
+        setAvailableTypes(merged);
+      } catch {
+        setAvailableTypes(Array.from(new Set(existingTypes)).sort());
+      }
+    };
+
+    loadModalTypes();
+  }, [existingTypes]);
+
+  useEffect(() => {
+    if (availableTypes.length > 0 && !relationType) {
+      setRelationType(availableTypes[0]);
     } else if (!relationType) {
       setRelationType('friend');
     }
-  }, [existingTypes]);
+  }, [availableTypes, relationType]);
 
   useEffect(() => {
     if (relation) {
@@ -31,6 +46,14 @@ export default function RelationModal({ relation, entities, existingTypes, onSav
       setTargetId(relation.target_id);
       setRelationType(relation.relation_type);
       setDescription(relation.description || '');
+
+      // 編集対象タイプが一覧にない場合でも選択肢に残す
+      setAvailableTypes(prev => {
+        if (prev.includes(relation.relation_type)) {
+          return prev;
+        }
+        return Array.from(new Set([...prev, relation.relation_type])).sort();
+      });
     }
   }, [relation]);
 
@@ -102,8 +125,8 @@ export default function RelationModal({ relation, entities, existingTypes, onSav
           <div style={styles.formGroup}>
             <label>関係タイプ</label>
             <select value={relationType} onChange={(e) => setRelationType(e.target.value)} style={styles.input}>
-              {existingTypes.length > 0 ? (
-                existingTypes.map((type) => (
+              {availableTypes.length > 0 ? (
+                availableTypes.map((type) => (
                   <option key={type} value={type}>
                     {type}
                   </option>
