@@ -1,5 +1,5 @@
 import React, { useState, useMemo, useEffect } from 'react';
-import { Entity, Relation, renameEntityType, deleteEntityType, renameRelationType, deleteRelationType, fetchEntityTypes, fetchRelationTypes } from './api';
+import { Entity, Relation, deleteEntityType, deleteRelationType, fetchEntityTypes, fetchRelationTypes } from './api';
 
 type Props = {
   entities: Entity[];
@@ -8,6 +8,7 @@ type Props = {
   manuallyAddedRelationTypes: string[];
   onClose: () => void;
   onUpdate: () => Promise<void>;
+  onRenameType: (category: 'entity' | 'relation', oldType: string, newType: string) => Promise<void>;
   onAddType: (category: 'entity' | 'relation', typeName: string) => Promise<void>;
   onRemoveType: (category: 'entity' | 'relation', typeName: string) => Promise<void>;
 };
@@ -18,7 +19,15 @@ type EditingState = {
   newType: string;
 } | null;
 
-export function TypeManagementDialog({ entities, relations, manuallyAddedEntityTypes, manuallyAddedRelationTypes, onClose, onUpdate, onAddType, onRemoveType }: Props) {
+const replaceTypeName = (types: string[], oldType: string, newType: string): string[] => {
+  const replaced = types.map(type => (type === oldType ? newType : type));
+  if (!replaced.includes(newType)) {
+    replaced.push(newType);
+  }
+  return Array.from(new Set(replaced));
+};
+
+export function TypeManagementDialog({ entities, relations, manuallyAddedEntityTypes, manuallyAddedRelationTypes, onClose, onUpdate, onRenameType, onAddType, onRemoveType }: Props) {
   const [editing, setEditing] = useState<EditingState>(null);
   const [confirmDelete, setConfirmDelete] = useState<{ category: 'entity' | 'relation'; type: string; count: number } | null>(null);
   const [addingType, setAddingType] = useState<{ category: 'entity' | 'relation'; value: string } | null>(null);
@@ -45,6 +54,15 @@ export function TypeManagementDialog({ entities, relations, manuallyAddedEntityT
     };
     loadLatestTypes();
   }, []); // マウント時のみ実行
+
+  // 親コンポーネント側のタイプ変更をダイアログにも反映
+  useEffect(() => {
+    setLocalEntityTypes(manuallyAddedEntityTypes);
+  }, [manuallyAddedEntityTypes]);
+
+  useEffect(() => {
+    setLocalRelationTypes(manuallyAddedRelationTypes);
+  }, [manuallyAddedRelationTypes]);
 
   // エンティティタイプの集計
   const entityTypeStats = useMemo(() => {
@@ -132,17 +150,30 @@ export function TypeManagementDialog({ entities, relations, manuallyAddedEntityT
       return;
     }
 
+    const trimmedNewType = editing.newType.trim();
+
+    if (trimmedNewType !== editing.oldType) {
+      const duplicated = editing.category === 'entity'
+        ? entityTypeStats.some(s => s.type === trimmedNewType)
+        : relationTypeStats.some(s => s.type === trimmedNewType);
+      if (duplicated) {
+        setError('同じタイプ名が既に存在します');
+        return;
+      }
+    }
+
     setLoading(true);
     setError('');
 
     try {
+      await onRenameType(editing.category, editing.oldType, trimmedNewType);
+
       if (editing.category === 'entity') {
-        await renameEntityType(editing.oldType, editing.newType.trim());
+        setLocalEntityTypes(prev => replaceTypeName(prev, editing.oldType, trimmedNewType));
       } else {
-        await renameRelationType(editing.oldType, editing.newType.trim());
+        setLocalRelationTypes(prev => replaceTypeName(prev, editing.oldType, trimmedNewType));
       }
       setEditing(null);
-      await onUpdate();
     } catch (err) {
       setError(err instanceof Error ? err.message : 'リネームに失敗しました');
     } finally {

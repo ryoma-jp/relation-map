@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { flushSync } from 'react-dom';
 import { debounce } from 'lodash';
-import { useEntities, useRelations, Entity, Relation, createEntity, updateEntity, deleteEntity, createRelation, updateRelation, deleteRelation, resetAllData, exportData, importData, fetchEntityTypes, fetchRelationTypes, createEntityType, createRelationType, deleteEntityTypeOnly, deleteRelationTypeOnly, fetchEntitiesList } from './api';
+import { useEntities, useRelations, Entity, Relation, createEntity, updateEntity, deleteEntity, createRelation, updateRelation, deleteRelation, resetAllData, exportData, importData, fetchEntityTypes, fetchRelationTypes, createEntityType, createRelationType, deleteEntityTypeOnly, deleteRelationTypeOnly, fetchEntitiesList, renameEntityType, renameRelationType } from './api';
 import { useAuth } from './AuthContext';
 import LoginPage from './LoginPage';
 import Graph from './Graph';
@@ -335,6 +335,65 @@ function AppContent() {
       }
     }
     await loadTypes();
+  };
+
+  const handleRenameType = async (category: 'entity' | 'relation', oldType: string, newType: string) => {
+    const trimmedNewType = newType.trim();
+    if (!trimmedNewType) {
+      throw new Error('新しいタイプ名を入力してください');
+    }
+    if (oldType === trimmedNewType) {
+      return;
+    }
+
+    if (category === 'entity') {
+      const existsInDb = apiEntities.some(entity => entity.type === oldType)
+        || manuallyAddedEntityTypes.includes(oldType);
+
+      if (existsInDb) {
+        await renameEntityType(oldType, trimmedNewType);
+        await refetchEntities();
+        await refetchRelations();
+        await loadTypes();
+        return;
+      }
+
+      // Sample/local-only types: rename in local state without API calls.
+      setLocalEntities(prev => prev.map(entity => (
+        entity.type === oldType ? { ...entity, type: trimmedNewType } : entity
+      )));
+      setManuallyAddedEntityTypes(prev => {
+        const replaced = prev.map(type => (type === oldType ? trimmedNewType : type));
+        if (!replaced.includes(trimmedNewType)) {
+          replaced.push(trimmedNewType);
+        }
+        return Array.from(new Set(replaced));
+      });
+      return;
+    }
+
+    const existsInDb = apiRelations.some(relation => relation.relation_type === oldType)
+      || manuallyAddedRelationTypes.includes(oldType);
+
+    if (existsInDb) {
+      await renameRelationType(oldType, trimmedNewType);
+      await refetchEntities();
+      await refetchRelations();
+      await loadTypes();
+      return;
+    }
+
+    // Sample/local-only types: rename in local state without API calls.
+    setLocalRelations(prev => prev.map(relation => (
+      relation.relation_type === oldType ? { ...relation, relation_type: trimmedNewType } : relation
+    )));
+    setManuallyAddedRelationTypes(prev => {
+      const replaced = prev.map(type => (type === oldType ? trimmedNewType : type));
+      if (!replaced.includes(trimmedNewType)) {
+        replaced.push(trimmedNewType);
+      }
+      return Array.from(new Set(replaced));
+    });
   };
 
   const handleResetData = () => {
@@ -815,6 +874,7 @@ function AppContent() {
             await refetchRelations();
             await loadTypes();
           }}
+          onRenameType={handleRenameType}
           onAddType={handleAddType}
           onRemoveType={handleRemoveType}
         />

@@ -455,6 +455,40 @@ class TestDataManagement:
 
 class TestTypeManagement:
     """Test type renaming and deletion operations."""
+
+    def test_rename_relation_type_without_relations_but_defined_type(self, authenticated_client):
+        """Renaming should work even when only type definition exists."""
+        authenticated_client.post("/api/relations/types", json={"name": "friend"})
+
+        response = authenticated_client.put("/api/relations/types/friend?new_type=buddy")
+        assert response.status_code == 200
+        data = response.json()
+        assert data["ok"] is True
+        assert data["updated_count"] == 0
+        assert data["old_type"] == "friend"
+        assert data["new_type"] == "buddy"
+
+        types = authenticated_client.get("/api/relations/types")
+        assert types.status_code == 200
+        assert "buddy" in types.json()
+        assert "friend" not in types.json()
+
+    def test_rename_entity_type_without_entities_but_defined_type(self, authenticated_client):
+        """Renaming should work even when only type definition exists."""
+        authenticated_client.post("/api/entities/types", json={"name": "person"})
+
+        response = authenticated_client.put("/api/entities/types/person?new_type=human")
+        assert response.status_code == 200
+        data = response.json()
+        assert data["ok"] is True
+        assert data["updated_count"] == 0
+        assert data["old_type"] == "person"
+        assert data["new_type"] == "human"
+
+        types = authenticated_client.get("/api/entities/types")
+        assert types.status_code == 200
+        assert "human" in types.json()
+        assert "person" not in types.json()
     
     def test_delete_entity_type_with_cascade(self, authenticated_client):
         """Test deleting entity type cascades to entities."""

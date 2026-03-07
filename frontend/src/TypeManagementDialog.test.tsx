@@ -19,6 +19,7 @@ describe('TypeManagementDialog', () => {
         manuallyAddedRelationTypes={[]}
         onClose={jest.fn()}
         onUpdate={jest.fn().mockResolvedValue(undefined)}
+        onRenameType={jest.fn().mockResolvedValue(undefined)}
         onAddType={jest.fn().mockResolvedValue(undefined)}
         onRemoveType={jest.fn().mockResolvedValue(undefined)}
       />

@@ -445,39 +445,44 @@ def rename_entity_type(
 ):
     """Rename entity type (bulk update all entities with this type)"""
     try:
+        normalized_new_type = new_type.strip()
+        if not normalized_new_type:
+            raise HTTPException(status_code=400, detail="Type name is required")
+
         # Filter by user_id
         entities = database.query(models.Entity).filter(
             models.Entity.type == old_type,
             models.Entity.user_id == current_user.id
         ).all()
         count = len(entities)
-        
-        if count == 0:
-            raise HTTPException(status_code=404, detail=f"No entities found with type '{old_type}'")
 
-        # Check if new_type already exists for this user's entities
-        if database.query(models.Entity).filter(
-            models.Entity.type == new_type,
-            models.Entity.user_id == current_user.id
-        ).first():
-            raise HTTPException(status_code=409, detail=f"Type '{new_type}' already exists")
-        
-        # Update all entities
-        for entity in entities:
-            entity.type = new_type
-
-        # Update or create EntityType record
-        existing_type = database.query(models.EntityType).filter(
+        existing_old_type = database.query(models.EntityType).filter(
             models.EntityType.name == old_type,
             models.EntityType.user_id == current_user.id
         ).first()
-        if existing_type:
-            existing_type.name = new_type
+        
+        if count == 0 and not existing_old_type:
+            raise HTTPException(status_code=404, detail=f"No entities found with type '{old_type}'")
+
+        # Check if normalized_new_type already exists for this user
+        if normalized_new_type != old_type and database.query(models.EntityType).filter(
+            models.EntityType.name == normalized_new_type,
+            models.EntityType.user_id == current_user.id
+        ).first():
+            raise HTTPException(status_code=409, detail=f"Type '{normalized_new_type}' already exists")
+        
+        # Update all entities
+        for entity in entities:
+            entity.type = normalized_new_type
+
+        # Update or create EntityType record
+        if existing_old_type:
+            existing_old_type.name = normalized_new_type
         else:
-            ensure_entity_type(database, new_type, current_user.id)
+            ensure_entity_type(database, normalized_new_type, current_user.id)
         
         database.commit()
-        return {"ok": True, "updated_count": count, "old_type": old_type, "new_type": new_type}
+        return {"ok": True, "updated_count": count, "old_type": old_type, "new_type": normalized_new_type}
     except HTTPException:
         raise
     except Exception as e:
@@ -541,32 +546,37 @@ def rename_relation_type(
 ):
     """Rename relation type (bulk update all relations with this type)"""
     try:
+        normalized_new_type = new_type.strip()
+        if not normalized_new_type:
+            raise HTTPException(status_code=400, detail="Type name is required")
+
         relations = database.query(models.Relation).filter(
             (models.Relation.relation_type == old_type) & (models.Relation.user_id == current_user.id)
         ).all()
         count = len(relations)
-        
-        if count == 0:
-            raise HTTPException(status_code=404, detail=f"No relations found with type '{old_type}'")
 
-        if database.query(models.RelationType).filter(
-            (models.RelationType.name == new_type) & (models.RelationType.user_id == current_user.id)
-        ).first():
-            raise HTTPException(status_code=409, detail=f"Type '{new_type}' already exists")
-        
-        for relation in relations:
-            relation.relation_type = new_type
-
-        existing_type = database.query(models.RelationType).filter(
+        existing_old_type = database.query(models.RelationType).filter(
             (models.RelationType.name == old_type) & (models.RelationType.user_id == current_user.id)
         ).first()
-        if existing_type:
-            existing_type.name = new_type
+        
+        if count == 0 and not existing_old_type:
+            raise HTTPException(status_code=404, detail=f"No relations found with type '{old_type}'")
+
+        if normalized_new_type != old_type and database.query(models.RelationType).filter(
+            (models.RelationType.name == normalized_new_type) & (models.RelationType.user_id == current_user.id)
+        ).first():
+            raise HTTPException(status_code=409, detail=f"Type '{normalized_new_type}' already exists")
+        
+        for relation in relations:
+            relation.relation_type = normalized_new_type
+
+        if existing_old_type:
+            existing_old_type.name = normalized_new_type
         else:
-            ensure_relation_type(database, new_type, current_user.id)
+            ensure_relation_type(database, normalized_new_type, current_user.id)
         
         database.commit()
-        return {"ok": True, "updated_count": count, "old_type": old_type, "new_type": new_type}
+        return {"ok": True, "updated_count": count, "old_type": old_type, "new_type": normalized_new_type}
     except HTTPException:
         raise
     except Exception as e:
