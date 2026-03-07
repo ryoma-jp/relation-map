@@ -49,7 +49,6 @@ db.SessionLocal = TestingSessionLocal
 
 # Now import app after database is configured for testing
 from main import app
-import api
 from db import get_db
 from auth import hash_password, create_access_token
 
