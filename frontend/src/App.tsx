@@ -208,7 +208,9 @@ function AppContent() {
     apiRelationsCount: apiRelations.length, 
     hasExitedSampleMode, 
     isUsingSampleData,
-    manuallyAddedRelationTypesCount: manuallyAddedRelationTypes.length
+    manuallyAddedRelationTypesCount: Array.isArray(manuallyAddedRelationTypes)
+      ? manuallyAddedRelationTypes.length
+      : 0
   });
 
   if (activeView === 'admin' && user) {

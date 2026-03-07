@@ -51,7 +51,10 @@ describe('api client', () => {
 
     const result = await fetchEntityTypes();
 
-    expect(global.fetch).toHaveBeenCalledWith('http://localhost:8000/api/entities/types');
+    expect(global.fetch).toHaveBeenCalledWith(
+      'http://localhost:8000/api/entities/types',
+      expect.objectContaining({ cache: 'no-cache' })
+    );
     expect(result).toEqual(mockTypes);
   });
 
