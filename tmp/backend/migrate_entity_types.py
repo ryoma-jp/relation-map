@@ -3,7 +3,6 @@ Migration script to add user_id column to entity_types table
 """
 from db import SessionLocal, engine
 from sqlalchemy import text
-import models
 
 def migrate():
     db = SessionLocal()
